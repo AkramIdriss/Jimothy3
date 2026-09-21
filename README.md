@@ -1,4 +1,4 @@
 # Jimothy3
 
 ## This is the repo for our team
-## SE-1 Class , With the Legend Dr. Reeves
+## SE-1 Class , With the legend "Dr. Reeves"
