@@ -1,3 +1,13 @@
+/*
+
+NoteHolderBox.java
+makes the not holder box
+
+Sarah Rawls - smr23a
+Akram Idriss - ami22a
+Isaac England - ile 22a
+
+*/
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;

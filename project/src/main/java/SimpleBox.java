@@ -1,3 +1,13 @@
+/*
+
+SimpleBox.java
+makes a simple box
+
+Sarah Rawls - smr23a
+Akram Idriss - ami22a
+Isaac England - ile 22a
+
+*/
 import java.util.Scanner;
 
 public class SimpleBox {

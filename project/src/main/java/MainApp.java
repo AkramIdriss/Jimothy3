@@ -1,3 +1,13 @@
+/*
+
+MainApp.java
+makes the thing run
+
+Sarah Rawls - smr23a
+Akram Idriss - ami22a
+Isaac England - ile 22a
+
+*/
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

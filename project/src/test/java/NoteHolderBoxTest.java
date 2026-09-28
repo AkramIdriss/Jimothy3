@@ -1,3 +1,13 @@
+/*
+
+NoteHolderBoxTest.java
+tests the note holder box type
+
+Sarah Rawls - smr23a
+Akram Idriss - ami22a
+Isaac England - ile 22a
+
+*/
 import static org.junit.Assert.*;
 
 import org.junit.Test;
