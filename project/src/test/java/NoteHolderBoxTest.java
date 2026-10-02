@@ -5,7 +5,7 @@ tests the note holder box type
 
 Sarah Rawls - smr23a
 Akram Idriss - ami22a
-Isaac England - ile 22a
+Isaac England - ile22a
 
 */
 import static org.junit.Assert.*;
@@ -52,5 +52,65 @@ public class NoteHolderBoxTest {
         assertFalse(withText.contains(">Isaac</text>"));
 
         assertFalse(withoutText.contains("fill: rgb(255,0,0)"));
+    }
+
+        /**
+     * The front is cut as two half panels with a gap between them, so each
+     * half's top edge is noteWidth / 2 - 13 mm long: 30 mm for the sticky
+     * note holder and 56 mm for the index card holder. The inner edge then
+     * drops straight to 10 mm above the bottom. Each half has one slot.
+     */
+    @Test
+    public void frontHalfPanelWidthLeavesCentreGap() {
+        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
+                .makeFrontPanelNHPath(0, 0);
+        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
+                .makeFrontPanelNHPath(0, 0);
+
+        assertTrue(sticky.startsWith("M 0.000 0.000 H 30.000 V 50.000 "));
+        assertTrue(index.startsWith("M 0.000 0.000 H 56.000 V 50.000 "));
+
+        assertEquals(1, sticky.split("Z", -1).length - 1);
+        assertEquals(1, index.split("Z", -1).length - 1);
+    }
+
+    /**
+     * Both styles are 86 mm deep, so the side panel must come out identical
+     * whichever style is chosen. It has six slots for the bottom panel and
+     * a foot cutout across the middle half of the bottom edge
+     * (from x = 64.5 back to x = 21.5, 10 mm high).
+     */
+    @Test
+    public void sidePanelIsSameForBothStyles() {
+        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
+                .makeSidePanelNHPath(0, 0);
+        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
+                .makeSidePanelNHPath(0, 0);
+
+        assertEquals(sticky, index);
+        assertEquals(6, sticky.split("Z", -1).length - 1);
+        assertTrue(sticky.contains("H 64.500 V 50.000 H 21.500 V 60.000 "));
+    }
+
+    /**
+     * The sheet lays out back + two sides in one row, so its width is
+     * noteWidth + 332 mm (padding, spacing and two 86 mm sides): 418 mm for
+     * sticky and 470 mm for index card. Height does not depend on width,
+     * so it is 366 mm for both. Every sheet has six cut panels.
+     */
+    @Test
+    public void svgCanvasGrowsWithNoteWidthOnly() {
+        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
+                .generateSVG();
+        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
+                .generateSVG();
+
+        assertTrue(sticky.contains(
+                "<svg width='418mm' height='366mm' viewBox='0 0 418 366' "));
+        assertTrue(index.contains(
+                "<svg width='470mm' height='366mm' viewBox='0 0 470 366' "));
+
+        assertEquals(6, sticky.split("class='cut'", -1).length - 1);
+        assertEquals(6, index.split("class='cut'", -1).length - 1);
     }
 }
