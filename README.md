@@ -18,7 +18,7 @@ bottom panel. |
 
 ## Requirements
 
-- Java JDK 17 or newer
+- Java JDK 17 through 25
 - [Apache Maven](https://maven.apache.org/)
 
 ## Getting Started
