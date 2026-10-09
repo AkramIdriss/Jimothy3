@@ -42,8 +42,9 @@ There are years worth of classes at ACU that have done this project, feel free t
 ## Show Solution
 
 box.SVG
- _
-|_|
+
+\_\_\
+|\_|
 
 (This is a box)
 
