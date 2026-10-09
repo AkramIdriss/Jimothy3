@@ -29,9 +29,9 @@ It's free! Make boxes to your heart's content.
 ## NOT List
 
 This is not:
-- a physical box
-- a program with a UI (or it won't be)
+- a program with a UI (or it won't be).
 - something that isn't a Java program from which you can make a SVG file of a box.
+    - The SVG will make a physical box, however. 
 
 
 ## Meet the Neighbors
