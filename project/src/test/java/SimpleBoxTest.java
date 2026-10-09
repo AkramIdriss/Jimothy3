@@ -108,4 +108,69 @@ public class SimpleBoxTest {
         assertEquals(6, top.split("H -3\\.000 ", -1).length - 1);
         assertTrue(top.endsWith("Z"));
     }
+
+    /**
+     * Panels are drawn at whatever (x, y) the layout gives them, so moving
+     * the origin must shift every coordinate without changing the shape.
+     * A 100 x 60 front panel at (10, 20) has a 10 mm corner, then its first
+     * top notch 3 mm deep and 80 / 15 = 5.333 mm wide. Its side teeth cut in
+     * to x = 107 and x = 13, and its bottom notches reach y = 83.
+     */
+    @Test
+    public void frontPanelShiftsWithOrigin() {
+        String atOrigin = SimpleBox.makeFrontPanelPath(0, 0, 100, 60, 5);
+        String shifted  = SimpleBox.makeFrontPanelPath(10, 20, 100, 60, 5);
+
+        assertTrue(shifted.startsWith(
+                "M 10.000 20.000 H 20.000 V 23.000 H 25.333 V 20.000 "));
+        assertTrue(shifted.contains("H 107.000 "));
+        assertTrue(shifted.contains("H 13.000 "));
+        assertTrue(shifted.contains("V 83.000 "));
+        assertTrue(shifted.endsWith("Z"));
+
+        assertEquals("Moving the panel must not add or remove path commands",
+                atOrigin.split(" ").length, shifted.split(" ").length);
+    }
+
+    /**
+     * The sheet holds six cut panels, each with its own label. For a
+     * 100 x 60 x 80 box the widest row is front + two sides
+     * (50 + 100 + 50 + 80 + 50 + 80 + 50 = 460) and the tallest column is
+     * front + bottom with its brim + back
+     * (50 + 60 + 50 + 92 + 50 + 60 + 50 = 412).
+     */
+    @Test
+    public void svgSheetHasSixLabelledPanelsAndFitsThem() {
+        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, "");
+
+        assertTrue(svg.contains("<svg viewBox='0 0 460 412' "));
+        assertEquals(6, svg.split("class='cut'", -1).length - 1);
+
+        String[] labels = {"Front", "Side (Right)", "Side (Left)",
+                           "Bottom", "Top", "Back"};
+        for (String label : labels) {
+            assertTrue("Missing label: " + label,
+                    svg.contains(">" + label + "</text>"));
+        }
+    }
+
+    /**
+     * The top monogram is sized to fit the panel: at most 60% of the depth,
+     * at least 8 px. The back copy is 70% of that, capped at 30% of the
+     * height, and never under 5 px. On a 100 x 60 x 80 box a single letter
+     * gets 48 px on top and 18 px on the back; a 30-letter name would need
+     * 5.556 px, so it is raised to 8 px on top and 5.6 px on the back.
+     */
+    @Test
+    public void monogramFontSizeFitsPanelAndHasMinimum() {
+        String oneLetter = SimpleBox.generateBoxSVG(100, 60, 80, 5, "A");
+        String longName  = SimpleBox.generateBoxSVG(100, 60, 80, 5,
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD");
+
+        assertTrue(oneLetter.contains("font-size=\"48.000\""));
+        assertTrue(oneLetter.contains("font-size=\"18.000\""));
+
+        assertTrue(longName.contains("font-size=\"8.000\""));
+        assertTrue(longName.contains("font-size=\"5.600\""));
+    }
 }
