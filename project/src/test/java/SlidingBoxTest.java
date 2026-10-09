@@ -111,4 +111,70 @@ public class SlidingBoxTest {
         int minSized = longName.split("font-size=\"8\\.0px\"", -1).length - 1;
         assertEquals("Both monograms should fall back to the minimum", 2, minSized);
     }
+
+    /**
+     * The outer top panel also has to let the drawer through, so its right
+     * edge is one straight cut down the full 80 mm depth with no teeth at
+     * x = 103. The other three edges keep their outward teeth: 8 on the
+     * top and bottom edges (y = -3 and y = 83) and 6 on the left (x = -3).
+     * Top and bottom are the same shape.
+     */
+    @Test
+    public void outerTopPanelHasFlatRightEdge() {
+        SlidingBox box = new SlidingBox(100, 80, 60, 5, "");
+        String top = box.makeOuterTopPanelPath(0, 0);
+
+        assertTrue(top.contains("H 100.000 V 80.000 H 90.000 "));
+        assertFalse(top.contains("H 103.000 "));
+
+        assertEquals(8, top.split("V -3\\.000 ", -1).length - 1);
+        assertEquals(8, top.split("V 83\\.000 ", -1).length - 1);
+        assertEquals(6, top.split("H -3\\.000 ", -1).length - 1);
+
+        assertEquals(top, box.makeOuterBottomPanelPath(0, 0));
+    }
+
+    /**
+     * The drawer is open at the top, so the inner front panel has nothing
+     * above its top edge. On a 94 x 57 mm panel with 5 mm teeth it has
+     * 5 teeth cut 3 mm in on each side (x = 91 and x = 3) and 7 notches
+     * along the bottom reaching y = 60. Front and back are the same shape.
+     */
+    @Test
+    public void innerFrontPanelHasFlatTopAndToothedSidesAndBottom() {
+        SlidingBox box = new SlidingBox(100, 80, 60, 5, "");
+        String front = box.makeInnerFrontPanelPath(0, 0);
+
+        assertTrue(front.startsWith("M 0.000 0.000 "));
+        assertFalse("Nothing should stick up above the top edge",
+                front.contains("V -"));
+
+        assertEquals(5, front.split("H 91\\.000 ", -1).length - 1);
+        assertEquals(5, front.split("H 3\\.000 ", -1).length - 1);
+        assertEquals(7, front.split("V 60\\.000 ", -1).length - 1);
+        assertTrue(front.endsWith("Z"));
+
+        assertEquals(front, box.makeInnerBackPanelPath(0, 0));
+    }
+
+    /**
+     * The sheet holds ten cut panels: five for the outer box and five for
+     * the drawer, under their own section headings. For a 100 x 80 x 60 box
+     * the widest row is the drawer's front + two sides
+     * (50 + 94 + 50 + 77 + 50 + 77 + 50 = 448) and the height stacks three
+     * outer rows and three inner rows to 791.
+     */
+    @Test
+    public void svgSheetHasTenPanelsInTwoSections() {
+        String svg = new SlidingBox(100, 80, 60, 5, "").generateSVG();
+
+        assertTrue(svg.contains(
+                "<svg width='448mm' height='791mm' viewBox='0 0 448 791' "));
+        assertEquals(10, svg.split("class='cut'", -1).length - 1);
+
+        assertTrue(svg.contains(">OUTER BOX</text>"));
+        assertTrue(svg.contains(">INNER BOX (Sliding Drawer)</text>"));
+        assertTrue(svg.contains(
+                ">Side Panel (Inner Right) - WITH HANDLE</text>"));
+    }
 }
