@@ -67,6 +67,7 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", rightEdgeY));
         
         double remainingHeight = height - topRightCorner - bottomRightCorner;
+        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         int numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         int totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -123,6 +124,7 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", leftEdgeY));
         
         remainingHeight = height - topLeftCorner - bottomLeftCorner;
+        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -202,6 +204,7 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", rightEdgeY));
         
         double remainingHeight = height - topRightCorner - bottomRightCorner;
+        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         int numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         int totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -258,6 +261,7 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", leftEdgeY));
         
         remainingHeight = height - topLeftCorner - bottomLeftCorner;
+        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         totalSegmentsVertical = 2 * numTeethVertical - 1;
