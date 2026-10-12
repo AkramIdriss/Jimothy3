@@ -177,4 +177,40 @@ public class SlidingBoxTest {
         assertTrue(svg.contains(
                 ">Side Panel (Inner Right) - WITH HANDLE</text>"));
     }
+
+    /**
+     * The outer side panel keeps teeth on all four edges. On an 80 x 60
+     * panel the side teeth stick 3 mm out (4 at x = 83, 4 at x = -3),
+     * while the top and bottom have 6 notches cut 3 mm in (y = 3 and
+     * y = 57). Nothing sticks out above the top edge.
+     */
+    @Test
+    public void outerSidePanelHasTeethOutOnSidesAndNotchesInTopAndBottom() {
+        String side = new SlidingBox(100, 80, 60, 5, "").makeOuterSidePanelPath(0, 0);
+
+        assertEquals(4, side.split("H 83\\.000 ", -1).length - 1);
+        assertEquals(4, side.split("H -3\\.000 ", -1).length - 1);
+        assertEquals(6, side.split("V 3\\.000 ", -1).length - 1);
+        assertEquals(6, side.split("V 57\\.000 ", -1).length - 1);
+        assertFalse(side.contains("V -"));
+    }
+
+    /**
+     * Every edge of the inner bottom panel is notched inward, so nothing
+     * should poke outside the 94 x 77 mm panel. There are 7 notches on the
+     * front and back edges (y = 3 and y = 74) and 6 on each side
+     * (x = 91 and x = 3).
+     */
+    @Test
+    public void innerBottomPanelIsFemaleOnAllEdges() {
+        String bottom = new SlidingBox(100, 80, 60, 5, "").makeInnerBottomPanelPath(0, 0);
+
+        assertEquals(7, bottom.split("V 3\\.000 ", -1).length - 1);
+        assertEquals(7, bottom.split("V 74\\.000 ", -1).length - 1);
+        assertEquals(6, bottom.split("H 91\\.000 ", -1).length - 1);
+        assertEquals(6, bottom.split("H 3\\.000 ", -1).length - 1);
+
+        assertFalse("Nothing should poke outside the panel", bottom.contains("-"));
+        assertTrue(bottom.endsWith("V 0.000 Z"));
+    }
 }

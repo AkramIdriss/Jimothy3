@@ -195,4 +195,62 @@ public class NoteHolderBoxTest {
         assertTrue(oneLetter.contains("font-size=\"50.0px\""));
         assertTrue(longName.contains("font-size=\"8.0px\""));
     }
+
+    /**
+     * The bottom panel's teeth have to fit into the back panel's slots.
+     * Slots are 5.8 mm wide and teeth 5.7 mm, both centred on the same x
+     * (12.286 for the first pair, 73.714 for the last), which leaves
+     * 0.05 mm of clearance on each side.
+     */
+    @Test
+    public void bottomTeethFitCentredInBackSlots() {
+        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "");
+        String back   = box.makeBackPanelNHPath(0, 0);
+        String bottom = box.makeBottomPanelNHPath(0, 0);
+
+        assertTrue(back.contains("M 9.386 47.500 V 44.500 H 15.186 "));
+        assertTrue(bottom.contains("H 9.436 V 0.000 H 15.136 V 3.000 "));
+
+        assertTrue(back.contains("M 70.814 47.500 V 44.500 H 76.614 "));
+        assertTrue(bottom.contains("H 70.864 V 0.000 H 76.564 V 3.000 "));
+    }
+
+    /**
+     * The panel paths are hand-written, so moving the origin by (10, 20)
+     * must shift every coordinate by exactly that much: H values by 10,
+     * V values by 20, and M points by (10, 20). The commands themselves
+     * must not change. This is checked for all four panels.
+     */
+    @Test
+    public void everyPanelShiftsExactlyWithOrigin() {
+        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "");
+        String[][] pairs = {
+            {box.makeFrontPanelNHPath(0, 0),  box.makeFrontPanelNHPath(10, 20)},
+            {box.makeBackPanelNHPath(0, 0),   box.makeBackPanelNHPath(10, 20)},
+            {box.makeSidePanelNHPath(0, 0),   box.makeSidePanelNHPath(10, 20)},
+            {box.makeBottomPanelNHPath(0, 0), box.makeBottomPanelNHPath(10, 20)}};
+
+        for (String[] pair : pairs) {
+            String[] original = pair[0].trim().split(" ");
+            String[] shifted  = pair[1].trim().split(" ");
+            assertEquals(original.length, shifted.length);
+
+            char command = ' ';
+            int moveArg = 0;
+            for (int i = 0; i < original.length; i++) {
+                if (original[i].matches("[MHVZ]")) {
+                    assertEquals(original[i], shifted[i]);
+                    command = original[i].charAt(0);
+                    moveArg = 0;
+                    continue;
+                }
+                // H shifts by x, V by y, M takes an x then a y
+                double offset = command == 'H' ? 10
+                              : command == 'V' ? 20
+                              : (moveArg++ == 0 ? 10 : 20);
+                assertEquals(Double.parseDouble(original[i]) + offset,
+                        Double.parseDouble(shifted[i]), 0.0011);
+            }
+        }
+    }
 }

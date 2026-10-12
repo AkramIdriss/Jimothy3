@@ -173,4 +173,47 @@ public class SimpleBoxTest {
         assertTrue(longName.contains("font-size=\"8.000\""));
         assertTrue(longName.contains("font-size=\"5.600\""));
     }
+
+    /**
+     * The monogram is centred on its panels. For a 100 x 60 x 80 box the
+     * top panel sits at (200, 160) and is 100 x 80, so its centre is
+     * (250, 200). The back panel sits at (50, 302) and is 100 x 60, so
+     * its centre is (100, 332).
+     */
+    @Test
+    public void monogramIsCentredOnTopAndBackPanels() {
+        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, "JDE");
+
+        assertTrue(svg.contains(
+                "<text x=\"250.000\" y=\"200.000\" font-size=\"48.000\""));
+        assertTrue(svg.contains(
+                "<text x=\"100.000\" y=\"332.000\" font-size=\"18.000\""));
+    }
+
+    /**
+     * Wider teeth mean fewer of them. With 10 mm teeth the corners are
+     * 20 mm, leaving 60 mm on the top edge: 3 notches 12 mm wide. Each
+     * side edge has 20 mm left, so just 1 tooth. With 5 mm teeth the top
+     * edge gets 8 notches.
+     *
+     * BUG: if a panel is so small that the corners use up the whole side
+     * edge (e.g. makeFrontPanelPath(0, 0, 20, 20, 5)), the side edges
+     * draw a zero-height tooth ("H 17.000 V 10.000 H 20.000"). The top
+     * and bottom edges are clamped to at least one toothWidth, but the
+     * side edges are not.
+     */
+    @Test
+    public void toothCountScalesWithToothWidth() {
+        String fine   = SimpleBox.makeFrontPanelPath(0, 0, 100, 60, 5);
+        String coarse = SimpleBox.makeFrontPanelPath(0, 0, 100, 60, 10);
+
+        assertEquals(8, fine.split("V 3\\.000 ", -1).length - 1);
+
+        assertEquals(3, coarse.split("V 3\\.000 ", -1).length - 1);
+        assertEquals(3, coarse.split("V 63\\.000 ", -1).length - 1);
+        assertEquals(1, coarse.split("H 97\\.000 ", -1).length - 1);
+        assertEquals(1, coarse.split("H 3\\.000 ", -1).length - 1);
+        assertTrue(coarse.startsWith(
+                "M 0.000 0.000 H 20.000 V 3.000 H 32.000 V 0.000 "));
+    }
 }
