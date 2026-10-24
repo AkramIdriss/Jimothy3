@@ -213,4 +213,95 @@ public class SlidingBoxTest {
         assertFalse("Nothing should poke outside the panel", bottom.contains("-"));
         assertTrue(bottom.endsWith("V 0.000 Z"));
     }
+
+    /**
+     * A null monogram must not crash generateSVG() and should produce the
+     * same sheet as an empty one, with no engraving on either panel.
+     */
+    @Test
+    public void nullMonogramIsSkipped() {
+        String svg   = new SlidingBox(100, 80, 60, 5, null).generateSVG();
+        String blank = new SlidingBox(100, 80, 60, 5, "").generateSVG();
+
+        assertTrue(svg.endsWith("</svg>"));
+        assertFalse(svg.contains("<text dominant-baseline"));
+        assertEquals(blank, svg);
+    }
+
+    /**
+     * The inner left side is 77 mm deep and 57 mm tall with a flat top
+     * (the drawer is open). Its side teeth stick 3 mm out: 5 at x = 80 and
+     * 5 at x = -3. Its bottom edge has 6 notches cut down to y = 60.
+     */
+    @Test
+    public void innerLeftSideHasFlatTopAndOutwardSideTeeth() {
+        String left = new SlidingBox(100, 80, 60, 5, "").makeInnerLeftSidePanelPath(0, 0);
+
+        assertTrue(left.startsWith("M 0.000 0.000 H 77.000 H 80.000 "));
+        assertFalse("Nothing should stick up above the top edge",
+                left.contains("V -"));
+
+        assertEquals(5, left.split("H 80\\.000 ", -1).length - 1);
+        assertEquals(5, left.split("H -3\\.000 ", -1).length - 1);
+        assertEquals(6, left.split("V 60\\.000 ", -1).length - 1);
+        assertTrue(left.endsWith("Z"));
+    }
+
+    /**
+     * The sheet width is set by the widest row. Making the outer box
+     * 100 mm wider makes the drawer 100 mm wider too, so the drawer's
+     * front + two sides row grows from 448 to 548 mm. The height only
+     * depends on height and depth, so it stays at 791 mm.
+     */
+    @Test
+    public void svgCanvasGrowsWithOuterWidth() {
+        String narrow = new SlidingBox(100, 80, 60, 5, "").generateSVG();
+        String wide   = new SlidingBox(200, 80, 60, 5, "").generateSVG();
+
+        assertTrue(narrow.contains("viewBox='0 0 448 791' "));
+        assertTrue(wide.contains(
+                "<svg width='548mm' height='791mm' viewBox='0 0 548 791' "));
+        assertTrue(wide.contains("Inner: 194 × 77 × 57 mm"));
+    }
+
+    /**
+     * Every panel built only from M/H/V/Z commands must shift exactly with
+     * its origin: moving it by (10, 20) adds 10 to every H value, 20 to
+     * every V value and (10, 20) to every M point, with no change to the
+     * commands themselves. Checked for the outer front, side and top and
+     * the inner front, left side and bottom.
+     */
+    @Test
+    public void panelsShiftExactlyWithOrigin() {
+        SlidingBox box = new SlidingBox(100, 80, 60, 5, "");
+        String[][] pairs = {
+            {box.makeOuterFrontPanelPath(0, 0),    box.makeOuterFrontPanelPath(10, 20)},
+            {box.makeOuterSidePanelPath(0, 0),     box.makeOuterSidePanelPath(10, 20)},
+            {box.makeOuterTopPanelPath(0, 0),      box.makeOuterTopPanelPath(10, 20)},
+            {box.makeInnerFrontPanelPath(0, 0),    box.makeInnerFrontPanelPath(10, 20)},
+            {box.makeInnerLeftSidePanelPath(0, 0), box.makeInnerLeftSidePanelPath(10, 20)},
+            {box.makeInnerBottomPanelPath(0, 0),   box.makeInnerBottomPanelPath(10, 20)}};
+
+        for (String[] pair : pairs) {
+            String[] original = pair[0].trim().split(" ");
+            String[] shifted  = pair[1].trim().split(" ");
+            assertEquals(original.length, shifted.length);
+
+            char command = ' ';
+            int moveArg = 0;
+            for (int i = 0; i < original.length; i++) {
+                if (original[i].matches("[MHVZ]")) {
+                    assertEquals(original[i], shifted[i]);
+                    command = original[i].charAt(0);
+                    moveArg = 0;
+                    continue;
+                }
+                double offset = command == 'H' ? 10
+                              : command == 'V' ? 20
+                              : (moveArg++ == 0 ? 10 : 20);
+                assertEquals(Double.parseDouble(original[i]) + offset,
+                        Double.parseDouble(shifted[i]), 0.0011);
+            }
+        }
+    }
 }
