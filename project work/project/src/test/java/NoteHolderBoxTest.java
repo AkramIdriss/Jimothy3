@@ -12,6 +12,11 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
 public class NoteHolderBoxTest {
 
     /**
@@ -252,5 +257,80 @@ public class NoteHolderBoxTest {
                         Double.parseDouble(shifted[i]), 0.0011);
             }
         }
+    }
+
+    /**
+     * A null engraving must not crash generateSVG() and should produce the
+     * same sheet as an empty one, with all six panel labels and no red
+     * engraving text.
+     */
+    @Test
+    public void nullEngravingIsSkipped() {
+        String svg   = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, null).generateSVG();
+        String blank = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "").generateSVG();
+
+        assertTrue(svg.trim().endsWith("</svg>"));
+        assertFalse(svg.contains("fill: rgb(255,0,0)"));
+        assertEquals(blank, svg);
+
+        String[] labels = {"Front Left", "Front Right", "Back Panel",
+                           "Side Panel", "Side Panel 2", "Bottom Panel"};
+        for (String label : labels) {
+            assertTrue("Missing label: " + label,
+                    svg.contains(">" + label + "</text>"));
+        }
+    }
+
+    /**
+     * Both front halves are the same shape. The left half sits at (50, 50)
+     * and the right half is placed half a note width plus 30 mm spacing to
+     * its right: x = 123 on the sticky holder and x = 149 on the index card
+     * holder.
+     */
+    @Test
+    public void frontHalvesAreSameShapeSideBySide() {
+        NoteHolderBox sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "");
+        NoteHolderBox index  = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "");
+        String stickySvg = sticky.generateSVG();
+        String indexSvg  = index.generateSVG();
+
+        assertTrue(stickySvg.contains(sticky.makeFrontPanelNHPath(50, 50)));
+        assertTrue(stickySvg.contains(sticky.makeFrontPanelNHPath(123, 50)));
+
+        assertTrue(indexSvg.contains(index.makeFrontPanelNHPath(50, 50)));
+        assertTrue(indexSvg.contains(index.makeFrontPanelNHPath(149, 50)));
+    }
+
+    /**
+     * Each front half has four teeth cut 3 mm in on its outer (left) edge
+     * and a single 5.8 x 3 mm slot near the bottom for the bottom panel,
+     * starting at x = 8.783 and running up from y = 47.5 to 44.5.
+     */
+    @Test
+    public void frontHalfHasFourTeethAndOneBottomSlot() {
+        String front = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
+                .makeFrontPanelNHPath(0, 0);
+
+        assertEquals(4, front.split("H 3\\.000 ", -1).length - 1);
+        assertTrue(front.endsWith(
+                "M 8.783 47.500 V 44.500 H 14.583 V 47.500 Z "));
+        assertFalse("Nothing should poke outside the left edge",
+                front.contains("H -"));
+    }
+
+    /**
+     * saveToFile() should write exactly what generateSVG() returns, so the
+     * file sent to the laser cutter matches the preview.
+     */
+    @Test
+    public void saveToFileWritesGeneratedSvg() throws IOException {
+        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "Isaac");
+        File file = File.createTempFile("noteholder", ".svg");
+        file.deleteOnExit();
+
+        box.saveToFile(file.getPath());
+        String saved = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+        assertEquals(box.generateSVG(), saved);
     }
 }

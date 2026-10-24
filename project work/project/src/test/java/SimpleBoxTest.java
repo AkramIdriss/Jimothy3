@@ -216,4 +216,72 @@ public class SimpleBoxTest {
         assertTrue(coarse.startsWith(
                 "M 0.000 0.000 H 20.000 V 3.000 H 32.000 V 0.000 "));
     }
+
+    /**
+     * Regression check for the small-panel fix. On a 20 x 20 panel with
+     * 5 mm teeth the corners use up the whole side edge, so the side edge is
+     * now given one full toothWidth (5 mm) to work with. The tooth should run
+     * from y = 10 down to y = 15 instead of collapsing to zero height at
+     * y = 10. This applies to both the front panel (teeth in, x = 17) and
+     * the side panel (teeth out, x = 23).
+     */
+    @Test
+    public void smallPanelSideTeethNeverCollapse() {
+        String front = SimpleBox.makeFrontPanelPath(0, 0, 20, 20, 5);
+        String side  = SimpleBox.makeSidePanelPath(0, 0, 20, 20, 5);
+
+        assertTrue(front.contains("H 17.000 V 15.000 H 20.000 "));
+        assertFalse(front.contains("H 17.000 V 10.000 H 20.000 "));
+
+        assertTrue(side.contains("H 23.000 V 15.000 H 20.000 "));
+        assertFalse(side.contains("H 23.000 V 10.000 H 20.000 "));
+    }
+
+    /**
+     * The bottom panel's slots sit 2 mm in from the box edge (inside the
+     * 6 mm brim) and start after the 10 mm corner. For a 100 x 80 panel at
+     * (10, 10) with 5 mm teeth, the first front slot is at (20, 12), 3 mm
+     * deep and 80 / 15 = 5.333 mm wide, lining up with the front panel's
+     * bottom notches.
+     */
+    @Test
+    public void bottomPanelSlotsAreInsetFromEdge() {
+        String bottom = SimpleBox.makeBottomPanelPath(10, 10, 100, 80, 5);
+
+        assertTrue(bottom.contains(
+                "M 20.000 12.000 V 15.000 H 25.333 V 12.000 Z "));
+        assertTrue(bottom.contains(
+                "M 30.667 12.000 V 15.000 H 36.000 V 12.000 Z "));
+        assertFalse("No slot should start on the brim edge",
+                bottom.contains("M 20.000 10.000 "));
+    }
+
+    /**
+     * The back panel reuses the front panel shape. In a 100 x 60 x 80 sheet
+     * the back panel sits at (50, 302), so the SVG must contain exactly the
+     * front-panel path generated at that position.
+     */
+    @Test
+    public void backPanelIsFrontPanelShapeAtBackPosition() {
+        String svg  = SimpleBox.generateBoxSVG(100, 60, 80, 5, "");
+        String back = SimpleBox.makeFrontPanelPath(50, 302, 100, 60, 5);
+
+        assertTrue(svg.contains("<path d='" + back + "' class='cut' />"));
+        assertTrue(svg.contains(">Back</text>"));
+    }
+
+    /**
+     * A null monogram must be treated the same as a blank one: the sheet is
+     * still generated with all six panels and no monogram text.
+     */
+    @Test
+    public void nullMonogramIsSkipped() {
+        String svg   = SimpleBox.generateBoxSVG(100, 60, 80, 5, null);
+        String blank = SimpleBox.generateBoxSVG(100, 60, 80, 5, "");
+
+        assertTrue(svg.endsWith("</svg>"));
+        assertFalse(svg.contains("class=\"monogram\""));
+        assertEquals(6, svg.split("class='cut'", -1).length - 1);
+        assertEquals(blank, svg);
+    }
 }
