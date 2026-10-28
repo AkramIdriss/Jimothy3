@@ -41,122 +41,17 @@ import javafx.animation.KeyValue;
 import javafx.util.Duration;    
 
 
-public class MainApp extends Application 
+public class MainApp
 {
 
     // Track the selected box
     private StackPane selectedBox = null;
     private String selectedStyle = null;
 
-    // Scenes that need to be accessed from multiple methods
-    private Scene boxScene;
-    private Scene startScene;
-
     @Override
-    public void start(Stage primaryStage) 
+    public void start() 
     {
-        StackPane rootPane = new StackPane();
-        // ----- START SCENE ----
-
-        Button startButton = new Button("Start");
-        startButton.setFont(Font.font("Garamond", 26));
-        startButton.setPrefWidth(150);
-        startButton.setPrefHeight(50);
-
-        //Add shadows behind button
-        DropShadow shadow = new DropShadow(8, 4, 4, Color.rgb(0,0,0,0.5));      //8 = radius, 4,4 = offset X and Y, color..rgb = semi transparent black
-        startButton.setEffect(shadow);
-
-        // ----- LOGO -----
-        // Load logo image
-        Image logoImage = new Image(getClass().getResourceAsStream("/UI/images/logo3.png"));
-        ImageView logoView = new ImageView(logoImage);
-
-        // Resize and preserve ratio
-        logoView.fitWidthProperty().bind(rootPane.widthProperty().multiply(0.2)); // 30% of window width
-        logoView.setPreserveRatio(true);
-
-
-        // Optional: add a shadow to the logo
-        DropShadow logoShadow = new DropShadow(10, Color.BLACK);
-        logoView.setEffect(logoShadow);
-
-
-        //VBox arranges elements vertically (one on top of the other)
-        VBox startLayout = new VBox(20, logoView, startButton);   //20 = spacing between elemlents
-        startLayout.setAlignment(Pos.CENTER);
-
-        StackPane.setAlignment(startLayout, Pos.CENTER);
-        // ----- SPARKLES -----
-        Pane sparklePane = new Pane();  //Pane is the cotainer where you can place elements anywhere(absolute positioning)
-        for (int i = 0; i < 100; i++) //Loop 100 times = create 100 sparkles
-        {
-            Circle s = new Circle(2, Color.WHITE);      //small white circle with radius 2
-            s.setOpacity(Math.random());                //random transparency for twinking effect
-            s.setLayoutX(Math.random() * rootPane.getWidth());          
-            s.setLayoutY(Math.random() * rootPane.getHeight());
-
-            rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
-    for (javafx.scene.Node node : sparklePane.getChildren()) {
-            node.setLayoutX(Math.random() * newVal.doubleValue());
-        }
-    });
-    rootPane.heightProperty().addListener((obs, oldVal, newVal) -> {
-        for (javafx.scene.Node node : sparklePane.getChildren()) {
-            node.setLayoutY(Math.random() * newVal.doubleValue());
-        }
-        }); 
-
-
-            sparklePane.getChildren().add(s);           //adds this sparkles to the screen
-
-            //Animate sparkle
-            //TranslateTransition = moves an object smoothly
-            //Duration.seconds ... = animation lasts 3 - 5 seconds (random for each sparkles)
-            TranslateTransition tt = new TranslateTransition(Duration.seconds(3 + Math.random() * 2), s);       
-            tt.setByY(20 + Math.random() * 10);                     //move cricles down by 20 - 30 pixels
-            tt.setCycleCount(TranslateTransition.INDEFINITE);       //loops forever
-            tt.setAutoReverse(true);                                //move back to the original position
-            tt.play();                                              //start the animation
-
-            //Timeline lets you animate properties over time.
-            Timeline tl = new Timeline
-            (
-                new KeyFrame(Duration.seconds(0), new KeyValue(s.opacityProperty(), Math.random())), //starting opacity
-                new KeyFrame(Duration.seconds(1 + Math.random()), new KeyValue(s.opacityProperty(), Math.random())) //opacity at some random time 1–2 seconds later.
-            );
-            tl.setCycleCount(Timeline.INDEFINITE);  //repeats forever.
-            tl.setAutoReverse(true);                //opacity fades back to starting value.
-            tl.play();
-        }
-
-        // ----- COMBINE SPARKLES AND CONTENT -----
-
-        //StackPane lays out children on top of each other, like a stack of cards.
-
-        //sparklePane is added first, so it is at the back
-        //startLayout (texts + button) is added on top of the sparkles.
-        rootPane.getChildren().addAll(sparklePane, startLayout); 
-        rootPane.setStyle("-fx-background-color: linear-gradient(to bottom, #00008B, #1d2d41ff);");         //Uses CSS styling to set a gradient background.
-        StackPane.setAlignment(startLayout, Pos.CENTER);
-        //Wraps the StackPane in a Scene of 700x500 pixels
-        startScene = new Scene(rootPane);  // remove fixed width/height
-        primaryStage.setWidth(700);        // optional: initial window size
-        primaryStage.setHeight(500);
-
-
-        // ----- BOX SELECTION SCENE -----
-        //Calls a method box_selection that sets up another scene where the user can design or select boxes.
-        //boxScene is stored for later switching.
-        //primaryStage is passed in case the method needs to attach UI elements or do layout for this new scene.
-        boxScene = box_selection(primaryStage);
-
-        //When the user clicks the Start button, the scene switches from the welcome screen (startScene) to the box selection screen (boxScene).
-        startButton.setOnAction(e -> primaryStage.setScene(boxScene));
-
-        primaryStage.setTitle("Box Designer"); //setTitle = sets the window title.
-        primaryStage.setScene(startScene);              //setScene(startScene) = shows the welcome screen first.
-        primaryStage.show();                            //displays the window to the user.
+       
     }
 
     // Add this method to MainApp.java
