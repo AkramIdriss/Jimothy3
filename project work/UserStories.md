@@ -1,4 +1,4 @@
-/*
+<!--
 
 UserStories.md
 Flashlight for whats going to happen on this project
@@ -7,7 +7,7 @@ Sarah Rawls - smr23a
 Akram Idriss - ami22a
 Isaac England - ile22a
 
-*/
+-->
 
 # User Stories
 
