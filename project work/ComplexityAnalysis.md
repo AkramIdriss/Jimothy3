@@ -1,4 +1,4 @@
-/*
+<!--
 
 ComplexityAnalysis.md
 McCabe (cyclomatic) complexity of every box in the project
@@ -7,7 +7,7 @@ Sarah Rawls - smr23a
 Akram Idriss - ami22a
 Isaac England - ile22a
 
-*/
+-->
 
 # Complexity Analysis
 
