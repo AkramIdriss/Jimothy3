@@ -19,12 +19,14 @@ This is for a final project in Software Engineering I at ACU (CS374.01).
 
 ## Elevator Pitch
 
-We want there to be an easy and use-friendly way way to create files of boxes that you can cut out given certain dimensions. In its final form, it will easily be able to mold to the material used and create long lasting products.
+We want there to be an easy and user-friendly way to create files of boxes that you can cut out given certain dimensions. In its final form, it will easily be able to mold to the material used and create long lasting products.
 
 
 ## Product Box
 
-Use this free software to be able to create boxes to your heatrt's content! 
+**Jimothy3: Boxes. Lots of boxes.**
+
+Use this free software to be able to create boxes to your heart's content!
 
 
 ## NOT List
@@ -38,6 +40,8 @@ This is not:
 ## Meet the Neighbors
 
 There are years worth of classes at ACU that have done this project, feel free to check them out! They will all have the same class ID number in their project.
+
+Also say hi to Dr. Reeves (the client) and the Maker Lab (the laser).
 
 
 ## Show Solution
@@ -55,11 +59,14 @@ box.SVG
 1. We do not have to do a UI. Do not attempt it.
 1. This project is on a very strict timeline, and cannot be done late. Do your best not to have anything be put off for too long.
 1. We have a very strict budget of what a student can afford. Do not spend a lot of money. Use cardboard where you can to mitigate costs, as well as working on the files to make them use up less wood. Make this a priority.
+1. Teeth that don't fit. Wasted wood.
 
 
 ## Size it Up
 
 This will take 16 weeks, ending in December. It likely will have no updates following that.
+
+Simple, Sliding, Note Holder... and soon Crate, Hinge, and Flex.
 
 
 

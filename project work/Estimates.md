@@ -19,5 +19,17 @@ Sarah Rawls - smr23a Akram Idriss - ami22a Isaac England - ile22a
 2 weeks
 
 
-## Remove Space betwen Boxes
+## Remove Space between Boxes
+1 week
+
+
+## Fit the SVG to the Laser Cutter's Max Size
+3 days
+
+
+## Terminal Preview of the Box
+3 days
+
+
+## Lower Complexity of the Panel Functions
 1 week
