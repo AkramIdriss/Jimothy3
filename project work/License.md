@@ -1,17 +1,14 @@
-/*
+<!--
 
-license.md
-a lisence on what you can or cannot do with our software.
+license.md a lisence on what you can or cannot do with our software.
 
-Sarah Rawls - smr23a
-Akram Idriss - ami22a
-Isaac England - ile22a
+Sarah Rawls - smr23a Akram Idriss - ami22a Isaac England - ile22a
 
-*/
+-->
 
-# MIT License
+MIT License
 
-Copyright (c) 2026 Sarah Rawls, Akram Idriss, & Isaac England
+Copyright (c) 2026 Akram Idriss
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
