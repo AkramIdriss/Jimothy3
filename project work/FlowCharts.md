@@ -1,4 +1,4 @@
-/*
+<!--
 
 FlowCharts.md
 How each box goes from the user's input to an SVG file
@@ -7,7 +7,7 @@ Sarah Rawls - smr23a
 Akram Idriss - ami22a
 Isaac England - ile22a
 
-*/
+-->
 
 # Flow Charts
 
