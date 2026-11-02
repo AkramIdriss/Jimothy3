@@ -603,7 +603,7 @@ public static String generateBoxSVG(double width, double height, double depth, d
     
     // Add monogram to top panel if provided
     if (monogram != null && !monogram.trim().isEmpty()) {
-        String name = monogram.trim();
+        String name = monogram.trim().toUpperCase();
         double panelX = topX;
         double panelY = topY;
         double panelWidth = width;

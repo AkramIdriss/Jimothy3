@@ -50,6 +50,11 @@ public class SimpleBoxTest {
         assertFalse(withName.contains(">  JDE  </text>"));
 
         assertFalse(blank.contains("class=\"monogram\""));
+
+        // Lowercase input is uppercased in the SVG, like the other boxes
+        String lower = SimpleBox.generateBoxSVG(100, 60, 80, 5, "jde");
+        assertEquals(2, lower.split(">JDE</text>", -1).length - 1);
+        assertFalse(lower.contains(">jde</text>"));
     }
 
         /**
