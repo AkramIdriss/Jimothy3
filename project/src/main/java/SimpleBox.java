@@ -10,11 +10,11 @@ Isaac England - ile22a
 */
 import java.util.Scanner;
 
-public class SimpleBox {
-    
-    // ========== FRONT PANEL ==========
-    public static String makeFrontPanelPath(double x, double y, double width, double height, 
-                                           double toothWidth) {
+public class SimpleBox 
+{
+    //front panel
+    public static String makeFrontPanelPath(double x, double y, double width, double height, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         
@@ -147,9 +147,9 @@ public class SimpleBox {
         return path.toString();
     }
     
-    // ========== SIDE PANEL ==========
-    public static String makeSidePanelPath(double x, double y, double width, double height, 
-                                          double toothWidth) {
+    // side panel
+    public static String makeSidePanelPath(double x, double y, double width, double height, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         
@@ -282,8 +282,9 @@ public class SimpleBox {
         return path.toString();
     }
     
-    // ========== BOTTOM PANEL ==========
-    public static String makeBottomPanelPath(double x, double y, double width, double depth, double toothWidth) {
+    // bottom panel
+    public static String makeBottomPanelPath(double x, double y, double width, double depth, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         double brim = 6.0;
@@ -408,8 +409,9 @@ public class SimpleBox {
         return path.toString();
     }
 
-    // ========== TOP PANEL ==========
-    public static String makeTopPanelPath(double x, double y, double width, double depth, double toothWidth) {
+    // top panel
+    public static String makeTopPanelPath(double x, double y, double width, double depth, double toothWidth) 
+    {
         double toothDepth = 3.0;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -527,177 +529,147 @@ public class SimpleBox {
         
         return path.toString();
     }
-    // Add this new method to your SimpleBox class
-public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String monogram) {
-    StringBuilder svg = new StringBuilder();
-    
-    double padding = 50;
-    double spacing = 50;
-    double brim = 6.0;
-    
-    // Calculate positions
-    double frontX = padding;
-    double frontY = padding;
-    
-    double sideX = frontX + width + spacing;
-    double sideY = padding;
-    
-    double bottomX = padding;
-    double bottomY = frontY + height + spacing;
-    
-    double topX = sideX;
-    double topY = sideY + height + spacing;
-    
-    double backX = padding;
-    double backY = bottomY + (depth + 2*brim) + spacing;
-    
-    double side2X = sideX + depth + spacing;
-    double side2Y = padding;
-    
-    // Calculate total canvas size
-    double totalWidth = Math.max(side2X + depth, frontX + width) + padding;
-    double totalHeight = Math.max(backY + height, topY + width) + padding;
-    
-    // SVG header
-    svg.append("<?xml version='1.0' encoding='UTF-8'?>\n");
-    svg.append(String.format("<svg viewBox='0 0 %.0f %.0f' ", totalWidth, totalHeight));
-    svg.append("preserveAspectRatio='xMidYMid meet' ");
-    svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
-    
-    // Style - updated with monogram class
-    svg.append("<style>\n");
-    svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
-    svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
-    svg.append("  .monogram { fill: #666; font-weight: bold; font-family: 'Times New Roman', serif; }\n");
-    svg.append("</style>\n");
-    
-    // Generate panels with labels
-    // Front
-    svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
-                            frontX + width/2, frontY - 10));
-    
-    // Side (right)
-    svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
-                            sideX + depth/2, sideY - 10));
-    
-    // Side (left)
-    svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
-                            side2X + depth/2, side2Y - 10));
-    
-    // Bottom
-    svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom</text>\n",
-                            bottomX + width/2, bottomY - 10));
-    
-    // Top  
-    svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
-                            topX + width/2, topY - 10));
-    
-    // Add monogram to top panel if provided
-    if (monogram != null && !monogram.trim().isEmpty()) {
-        String name = monogram.trim();
-        double panelX = topX;
-        double panelY = topY;
-        double panelWidth = width;
-        double panelHeight = depth;
-        
-        // Auto-scaling font size
-        double maxFont = panelHeight * 0.6;
-        double minFont = 8.0;
-        double scaledFont = Math.min(maxFont, (panelWidth / (name.length() * 0.6)));
-        scaledFont = Math.max(minFont, scaledFont);
-        
-        svg.append(String.format(
-            "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-            "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-            "class=\"monogram\">%s</text>\n",
-            panelX + panelWidth / 2.0,
-            panelY + panelHeight / 2.0,
-            scaledFont,
-            name
-        ));
-        
-        // Optional: Add monogram to back panel as well (smaller)
-        double backPanelX = backX;
-        double backPanelY = backY;
-        double backPanelWidth = width;
-        double backPanelHeight = height;
-        
-        double backFont = Math.min(backPanelHeight * 0.3, scaledFont * 0.7);
-        backFont = Math.max(5.0, backFont);
-        
-        svg.append(String.format(
-            "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-            "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-            "class=\"monogram\" opacity=\"0.7\">%s</text>\n",
-            backPanelX + backPanelWidth / 2.0,
-            backPanelY + backPanelHeight / 2.0,
-            backFont,
-            name
-        ));
-    }
-    
-    // Back
-    svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
-                            backX + width/2, backY - 10));
-    
-    svg.append("</svg>");
-    return svg.toString();
-}
-    // ========== MAIN METHOD ==========
-    // ========== MAIN METHOD ==========
-public static void main(String[] args) {
-    Scanner scanner = new Scanner(System.in);
-    
-    System.out.println("=== Box Panel Generator ===");
-    System.out.println("Generates Front, Side, and Bottom Panels in one SVG\n");
-    
-    // Get box dimensions
-    System.out.print("Box width (mm): ");
-    double width = scanner.nextDouble();
-    
-    System.out.print("Box height (mm): ");
-    double height = scanner.nextDouble();
-    
-    System.out.print("Box depth (mm): ");
-    double depth = scanner.nextDouble();
-    
-    System.out.print("Tooth width (mm): ");
-    double toothWidth = scanner.nextDouble();
-    scanner.nextLine(); // consume newline
-    
-    // Get monogram
-    System.out.print("Enter name or monogram for the top panel (press Enter to skip): ");
-    String monogram = scanner.nextLine().trim();
-    
-    scanner.close();
-    
-    // Validate inputs
-    if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) {
-        System.out.println("Error: All values must be positive!");
-        return;
-    }
-    
-    // Generate SVG using the new method
-    String svgContent = generateBoxSVG(width, height, depth, toothWidth, monogram);
-    
-    // Save to file
-    String filename = String.format("box_%.0fx%.0fx%.0f_t%.0f.svg", width, height, depth, toothWidth);
-    try {
-        java.io.FileWriter writer = new java.io.FileWriter(filename);
-        writer.write(svgContent);
-        writer.close();
-        System.out.println("\nSVG file saved as: " + filename);
-        if (!monogram.isEmpty()) {
-            System.out.println("Monogram: " + monogram.toUpperCase());
+
+
+    // generates the SVG of the box
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String engraving) 
+    {
+        // Validate inputs
+        if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) 
+        {
+            System.out.println("Error: All values must be positive!");
+            return "";
         }
-    } catch (Exception e) {
-        System.out.println("Error saving file: " + e.getMessage());
+
+        StringBuilder svg = new StringBuilder();
+        
+        double padding = 50;
+        double spacing = 50;
+        double brim = 6.0;
+        
+        // Calculate positions
+        double frontX = padding;
+        double frontY = padding;
+        
+        double sideX = frontX + width + spacing;
+        double sideY = padding;
+        
+        double bottomX = padding;
+        double bottomY = frontY + height + spacing;
+        
+        double topX = sideX;
+        double topY = sideY + height + spacing;
+        
+        double backX = padding;
+        double backY = bottomY + (depth + 2*brim) + spacing;
+        
+        double side2X = sideX + depth + spacing;
+        double side2Y = padding;
+        
+        // Calculate total canvas size
+        double totalWidth = Math.max(side2X + depth, frontX + width) + padding;
+        double totalHeight = Math.max(backY + height, topY + width) + padding;
+        
+        // SVG header
+        svg.append("<?xml version='1.0' encoding='UTF-8'?>\n");
+        svg.append(String.format("<svg viewBox='0 0 %.0f %.0f' ", totalWidth, totalHeight));
+        svg.append("preserveAspectRatio='xMidYMid meet' ");
+        svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
+        
+        // Style - updated with engraving class
+        svg.append("<style>\n");
+        svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
+        svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
+        svg.append("  .engraving { fill: #666; font-weight: bold; font-family: 'Times New Roman', serif; }\n");
+        svg.append("</style>\n");
+        
+
+
+        // Generate panels with labels
+
+        // Front
+        svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
+                                frontX + width/2, frontY - 10));
+        
+        // Side (right)
+        svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
+                                sideX + depth/2, sideY - 10));
+        
+        // Side (left)
+        svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
+                                side2X + depth/2, side2Y - 10));
+        
+        // Bottom
+        svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom</text>\n",
+                                bottomX + width/2, bottomY - 10));
+        
+        // Top  
+        svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
+                                topX + width/2, topY - 10));
+        
+
+        // Add engraving to top panel if provided
+        if (engraving != null && !engraving.trim().isEmpty()) {
+            String name = engraving.trim();
+            double panelX = topX;
+            double panelY = topY;
+            double panelWidth = width;
+            double panelHeight = depth;
+            
+            // Auto-scaling font size
+            double maxFont = panelHeight * 0.6;
+            double minFont = 8.0;
+            double scaledFont = Math.min(maxFont, (panelWidth / (name.length() * 0.6)));
+            scaledFont = Math.max(minFont, scaledFont);
+            
+            svg.append(String.format(
+                "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
+                "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
+                "class=\"engraving\">%s</text>\n",
+                panelX + panelWidth / 2.0,
+                panelY + panelHeight / 2.0,
+                scaledFont,
+                name
+            ));
+            
+            // Optional: Add engraving to back panel as well (smaller)
+            double backPanelX = backX;
+            double backPanelY = backY;
+            double backPanelWidth = width;
+            double backPanelHeight = height;
+            
+            double backFont = Math.min(backPanelHeight * 0.3, scaledFont * 0.7);
+            backFont = Math.max(5.0, backFont);
+            
+            svg.append(String.format(
+                "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
+                "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
+                "class=\"engraving\" opacity=\"0.7\">%s</text>\n",
+                backPanelX + backPanelWidth / 2.0,
+                backPanelY + backPanelHeight / 2.0,
+                backFont,
+                name
+            ));
+        }
+        
+        // Back
+        svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
+                                backX + width/2, backY - 10));
+        
+        svg.append("</svg>");
+        return svg.toString();
     }
-}
+
+
+
+    public static void main(String[] args) 
+    {
+
+    }
 }
