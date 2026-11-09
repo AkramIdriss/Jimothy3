@@ -8,6 +8,7 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -37,15 +38,16 @@ public class MainApp
         Scanner scanner = new Scanner(System.in);
         // Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Pick a style of box:\r\n" + "[1] based (simple) box\r\n" + "[2] sticky note / notecard box\r\n" + "[3] sliding box\r\n" + "[4] crate\r\n" + "[5] hinge box\r\n" + "[6] flex box");
+        System.out.println("Pick a style of box:\r\n" + "[1] based (simple) box\r\n" + "[2] sticky note / notecard box\r\n" + "[3] sliding box\r\n" + "[4] crate\r\n" + "[5] hinge box\r\n" + "[6] flex box\n");
         String whatIsIt = scanner.nextLine().toLowerCase(); // reads what box the user wants
+        System.out.println("\n");
 
         // having whatIsIt be read to determine the box type, each is realted to the println above
         
         // based (simple) box
         if(whatIsIt.contains("1") || whatIsIt.contains("based") || whatIsIt.contains("simple"))
         {
-            System.out.println("Enter all necessary measurements:\nFormat: \"length width height toothWidth (optional) engraving\"\n Note: typing the word \"engraving\" will take you to a different screen.\n");
+            System.out.println("Enter all necessary measurements:\nFormat: \"length width height toothWidth (optional) engraving\"\nNote: typing the word \"engraving\" will take you to a different screen.\n");
             
             length = scanner.nextDouble();
             width = scanner.nextDouble();
@@ -54,6 +56,7 @@ public class MainApp
 
             // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -67,6 +70,7 @@ public class MainApp
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
+            System.out.println("\n");
             if(fileName.equals("")) // if it is empty, give it a name
             {
                 fileName = "fileFinalRealV2-DoNotOverwrite(2).svg";
@@ -80,6 +84,7 @@ public class MainApp
         {
             System.out.println("Would you like to engrave it?\n");
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("yes")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -89,8 +94,9 @@ public class MainApp
             // determine what type of holder it is
             System.out.println("Choose your note holder style:\n");
             System.out.println("[1] Sticky Note Holder (86 × 86 × 60 mm)");
-            System.out.println("[2] Index Card Holder (138 × 86 × 60 mm)");
+            System.out.println("[2] Index Card Holder (138 × 86 × 60 mm)\n");
             String style = scanner.nextLine().trim().toLowerCase();
+            System.out.println("\n");
             
             // actually make an SVG
             generateNoteHolderSVG(style, engraving);
@@ -99,6 +105,7 @@ public class MainApp
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
+            System.out.println("\n");
             if(fileName.equals("")) // if it is empty, give it a name
             {
                 fileName = "fileFinalRealV2-DoNotOverwrite(2).svg";
@@ -119,6 +126,7 @@ public class MainApp
 
             // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -132,6 +140,8 @@ public class MainApp
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
+            System.out.println("\n");
+            
             if(fileName.equals("")) // if it is empty, give it a name
             {
                 fileName = "fileFinalRealV2-DoNotOverwrite(2).svg";
@@ -152,6 +162,7 @@ public class MainApp
 
             // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -185,6 +196,7 @@ public class MainApp
 
             // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -197,6 +209,8 @@ public class MainApp
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
+            System.out.println("\n");
+
             if(fileName.equals("")) // if it is empty, give it a name
             {
                 fileName = "fileFinalRealV2-DoNotOverwrite(2).svg";
@@ -217,6 +231,7 @@ public class MainApp
 
             // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
+            System.out.println("\n");
 
             if(engraveQuestion)
             {
@@ -230,6 +245,8 @@ public class MainApp
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
+            System.out.println("\n");
+            
             if(fileName.equals("")) // if it is empty, give it a name
             {
                 fileName = "fileFinalRealV2-DoNotOverwrite(2).svg";
@@ -249,28 +266,18 @@ public class MainApp
 
     private static String generateNoteHolderSVG(String style, String engraving) 
     {
-        try 
-        {            
-            // Map your style names to NoteHolderBox constants
-            if (style.contains("1") || style.contains("sticky") || style.contains("note")) 
-            {
-                return NoteHolderBox.generateBoxSVG(1, engraving);
-            }
-            else if (style.contains("2") || style.contains("index") || style.contains("card")) 
-            {
-                return NoteHolderBox.generateBoxSVG(2, engraving);
-            }
-            else
-            {
-                System.out.println("Not a valid input (NoteHolderBox style).");
-                return "";
-            }
-        } 
-
-        catch (Exception e) 
+        if (style.contains("1") || style.contains("sticky") || style.contains("note")) 
         {
-            e.printStackTrace();
-            return "<svg><text x='20' y='50'>Error generating note holder SVG</text></svg>";
+            return NoteHolderBox.generateBoxSVG(1, engraving);
+        }
+        else if (style.contains("2") || style.contains("index") || style.contains("card")) 
+        {
+            return NoteHolderBox.generateBoxSVG(2, engraving);
+        }
+        else
+        {
+            System.out.println("Not a valid input (NoteHolderBox style).");
+            return "";
         }
     }
 

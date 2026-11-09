@@ -8,6 +8,8 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import java.util.Scanner;
 
 public class SimpleBox 

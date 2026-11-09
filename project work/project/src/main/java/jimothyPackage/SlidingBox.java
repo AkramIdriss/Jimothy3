@@ -8,6 +8,8 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
