@@ -8,6 +8,8 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
@@ -17,53 +19,13 @@ import java.util.Scanner;
  * Produces: Complete SVG file with all note holder panels
  ******************************************************************************/
 
-public class NoteHolderBox {
-    
-    private double noteWidth;
-    private double noteDepth;
-    private double noteHeight;
-    private double toothWidth;
-    private String engraving;
-    
-    // Note style constants
-    public static final int STICKY_NOTE_HOLDER = 1;      // 86x86x60mm - Standard sticky notes
-    public static final int INDEXCARD_HOLDER = 2;         // 138x86x60mm - Index cards
-    
-    private int noteStyle;
-    
-    // Constructor with preset styles
-    public NoteHolderBox(int noteStyle, String engraving) {
-        this.noteStyle = noteStyle;
-        this.engraving = engraving;
-        setDimensionsFromStyle(noteStyle);
-    }
-    
-    // Set dimensions based on note style
-    private void setDimensionsFromStyle(int style) {
-        if (style == STICKY_NOTE_HOLDER) {
-            noteWidth = 86;
-            noteDepth = 86;
-            noteHeight = 60;
-            toothWidth = 5.8;
-        }
-        else if (style == INDEXCARD_HOLDER) {
-            noteWidth = 138;
-            noteDepth = 86;
-            noteHeight = 60;
-            toothWidth = 5.8;
-        }
-        else {
-            // Default to sticky note holder
-            noteWidth = 86;
-            noteDepth = 86;
-            noteHeight = 60;
-            toothWidth = 5.8;
-        }
-    }
-    
+public class NoteHolderBox 
+{
     // Helper method to calculate optimal font size for text to fit in panel
-    private double calculateFontSize(String text, double panelWidth, double panelDepth) {
-        if (text == null || text.isEmpty()) {
+    private static double calculateFontSize(String text, double panelWidth, double panelDepth) 
+    {
+        if (text == null || text.isEmpty()) 
+        {
             return 0;
         }
         
@@ -93,8 +55,9 @@ public class NoteHolderBox {
         return fontSize;
     }
     
-    // ========== FRONT PANEL (LEFT and RIGHT HALVES) ==========
-    public String makeFrontPanelNHPath(double x, double y) {
+    // front panel (left and right)
+    public static String makeFrontPanelNHPath(double x, double y, double noteWidth, double noteDepth, double noteHeight, double toothWidth)
+    {
         StringBuilder path = new StringBuilder();
         int toothDepth = 3;
         double cornerLength = 9.75;
@@ -169,8 +132,9 @@ public class NoteHolderBox {
         return path.toString();
     }
 	
-    // ========== BACK PANEL ==========
-    public String makeBackPanelNHPath(double x, double y) {
+    // back panel
+    public static String makeBackPanelNHPath(double x, double y, double noteWidth, double noteDepth, double noteHeight, double toothWidth)
+    {
         StringBuilder path = new StringBuilder();
         
         double backToothWidth = 5.8;
@@ -280,8 +244,9 @@ public class NoteHolderBox {
         return path.toString();
     }
     
-    // ========== SIDE PANEL ==========
-    public String makeSidePanelNHPath(double x, double y) {
+    // side panel
+    public static String makeSidePanelNHPath(double x, double y, double noteWidth, double noteDepth, double noteHeight, double toothWidth)
+    {
         StringBuilder path = new StringBuilder();
         int toothDepth = 3;
         double cornerLength = 15.5;
@@ -383,8 +348,9 @@ public class NoteHolderBox {
         return path.toString();
     }
     
-    // ========== BOTTOM PANEL ==========
-    public String makeBottomPanelNHPath(double x, double y) {
+    // bottom panel
+    public static String makeBottomPanelNHPath(double x, double y, double noteWidth, double noteDepth, double noteHeight, double toothWidth) 
+    {
         StringBuilder path = new StringBuilder();
         double toothDepth = 3;
         double bottomToothWidth = 5.7;
@@ -483,10 +449,42 @@ public class NoteHolderBox {
         return path.toString();
     }
     
-    // ========== GENERATE COMPLETE SVG ==========
-    public String generateSVG() {
+    // actually generate the svg
+    public static String generateBoxSVG(int noteStyle, String engraving) 
+    {
+        // variables for sizing
+        double noteWidth;
+        double noteDepth;
+        double noteHeight;
+        double toothWidth;
+
         double padding = 50;
         double spacing = 30;
+
+
+        // determine sizing based on note style
+        if (noteStyle == 1) // 86x86x60mm - Standard sticky notes
+        {
+            noteWidth = 86;
+            noteDepth = 86;
+            noteHeight = 60;
+            toothWidth = 5.8;
+        }
+        else if (noteStyle == 2) // 138x86x60mm - Index cards
+        {
+            noteWidth = 138;
+            noteDepth = 86;
+            noteHeight = 60;
+            toothWidth = 5.8;
+        }
+        else 
+        {
+            // Default to sticky note holder
+            noteWidth = 86;
+            noteDepth = 86;
+            noteHeight = 60;
+            toothWidth = 5.8;
+        }
         
         // Calculate panel positions
         double frontX = padding;
@@ -507,6 +505,7 @@ public class NoteHolderBox {
         double bottomX = padding;
         double bottomY = backY + noteHeight + spacing;
         
+
         // Calculate canvas size
         double totalWidth = side2X + noteDepth + padding;
         double totalHeight = bottomY + noteDepth + padding;
@@ -524,48 +523,50 @@ public class NoteHolderBox {
         svg.append("</style>\n");
         
         // Front Panel (Left)
-        String frontPath = makeFrontPanelNHPath(frontX, frontY);
+        String frontPath = makeFrontPanelNHPath(frontX, frontY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(frontPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Left</text>\n",
                                 frontX + noteWidth / 4, frontY - 10));
         
         // Front Panel (Right)
-        String front2Path = makeFrontPanelNHPath(otherFrontX, frontY);
+        String front2Path = makeFrontPanelNHPath(otherFrontX, frontY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(front2Path).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Right</text>\n",
                                 otherFrontX + noteWidth / 4, frontY - 10));
         
         // Back Panel
-        String backPath = makeBackPanelNHPath(backX, backY);
+        String backPath = makeBackPanelNHPath(backX, backY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(backPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel</text>\n",
                                 backX + noteWidth / 2, backY - 10));
         
         // Side Panel 1
-        String sidePath = makeSidePanelNHPath(sideX, sideY);
+        String sidePath = makeSidePanelNHPath(sideX, sideY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(sidePath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel</text>\n",
                                 sideX + noteDepth / 2, sideY - 10));
         
         // Side Panel 2
-        String side2Path = makeSidePanelNHPath(side2X, side2Y);
+        String side2Path = makeSidePanelNHPath(side2X, side2Y, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(side2Path).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel 2</text>\n",
                                 side2X + noteDepth / 2, side2Y - 10));
         
         // Bottom Panel
-        String bottomPath = makeBottomPanelNHPath(bottomX, bottomY);
+        String bottomPath = makeBottomPanelNHPath(bottomX, bottomY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(bottomPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel</text>\n",
                                 bottomX + noteWidth / 2, bottomY - 10));
         
         // Add engraving to bottom panel if provided
-        if (engraving != null && !engraving.isEmpty()) {
+        if (engraving != null && !engraving.isEmpty()) 
+        {
             double centerX = bottomX + noteWidth / 2.0;
             double centerY = bottomY + noteDepth / 2.0;
             double fontSize = calculateFontSize(engraving, noteWidth, noteDepth);
 
-            svg.append(
+            svg.append
+            (
                 "<text dominant-baseline=\"middle\" font-size=\"" + String.format("%.1fpx", fontSize) +
                 "\" style=\"font-family: sans-serif; font-weight: bold; fill: rgb(255,0,0)\" " +
                 "text-anchor=\"middle\" transform=\"matrix(1 0 0 1 " +
@@ -578,62 +579,9 @@ public class NoteHolderBox {
         return svg.toString();
     }
     
-    // ========== SAVE TO FILE ==========
-    public void saveToFile(String filename) throws IOException {
-        FileWriter writer = new FileWriter(filename);
-        writer.write(generateSVG());
-        writer.close();
-    }
-    
-    // ========== MAIN METHOD ==========
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+    // main
+    public static void main(String[] args) 
+    {
         
-        System.out.println("=== Note Holder Box Generator ===");
-        System.out.println("Choose your note holder style:\n");
-        System.out.println("1. Sticky Note Holder (86 × 86 × 60 mm)");
-        System.out.println("2. Indexcard Holder (138 × 86 × 60 mm)");
-        System.out.print("\nEnter style (1-2): ");
-        
-        int noteStyle = scanner.nextInt();
-        scanner.nextLine(); // consume newline
-        
-        // Get engraving text (can be full name now)
-        System.out.print("Enter text for bottom panel engraving (or press Enter to skip): ");
-        String engraving = scanner.nextLine().trim();
-        
-        scanner.close();
-        
-        // Validate input
-        if (noteStyle < 1 || noteStyle > 2) {
-            System.out.println("Invalid style! Using Sticky Note Holder as default.");
-            noteStyle = STICKY_NOTE_HOLDER;
-        }
-        
-        // Create box with chosen style and engraving
-        NoteHolderBox box = new NoteHolderBox(noteStyle, engraving);
-        
-        // Generate filename based on style
-        String styleName;
-        if (noteStyle == STICKY_NOTE_HOLDER) {
-            styleName = "StickyNoteHolder";
-        } else{
-            styleName = "IndexcardHolder";
-        }
-        
-        String filename = String.format("%s_%.0fx%.0fx%.0f.svg", 
-                                       styleName, box.noteWidth, box.noteDepth, box.noteHeight);
-        
-        try {
-            box.saveToFile(filename);
-            System.out.println("\nSVG file saved as: " + filename);
-            System.out.println(String.format("Dimensions: %.0f × %.0f × %.0f mm", 
-                                            box.noteWidth, box.noteDepth, box.noteHeight));
-            if (engraving != null && !engraving.isEmpty()) {
-                System.out.println("Engraving: " + engraving.toUpperCase());
-            }
-        } catch (IOException e) {
-            System.out.println("Error saving file: " + e.getMessage());
-        }
     }
 }
