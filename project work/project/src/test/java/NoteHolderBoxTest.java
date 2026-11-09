@@ -10,6 +10,16 @@ Isaac England - ile22a
 */
 import static org.junit.Assert.*;
 
+import java.awt.geom.Rectangle2D;
+import java.util.Arrays;
+import java.util.List;
+
+import engraving.Bounds;
+import engraving.EngraveStyle;
+import engraving.EngravingPlan;
+import engraving.Fonts;
+import engraving.SvgAssert;
+import engraving.TextEngraving;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,8 +51,8 @@ public class NoteHolderBoxTest {
     }
 
     /**
-     * Engraving text should appear uppercased in the SVG when provided,
-     * and no engraving <text> element should be emitted when it's blank.
+     * Engraving text should be engraved (uppercased) once, on the bottom
+     * panel, and nothing should be engraved when it's blank.
      */
     @Test
     public void generateSvgHandlesEngraving() {
@@ -53,10 +63,11 @@ public class NoteHolderBoxTest {
 
         assertTrue(withText.startsWith("<?xml"));
         assertTrue(withText.trim().endsWith("</svg>"));
-        assertTrue(withText.contains(">ISAAC</text>"));
-        assertFalse(withText.contains(">Isaac</text>"));
+        assertEquals(1, SvgAssert.countEngravings(withText));
+        assertEquals("Lowercase is uppercased",
+                new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "ISAAC").generateSVG(), withText);
 
-        assertFalse(withoutText.contains("fill: rgb(255,0,0)"));
+        assertEquals(0, SvgAssert.countEngravings(withoutText));
     }
 
         /**
@@ -174,11 +185,10 @@ public class NoteHolderBoxTest {
     }
 
     /**
-     * The engraving is centred on the bottom panel and sized to fit 60% of
-     * it, clamped to 8 to 50 px. A five-letter name is limited by width:
-     * 0.6 * 86 / 3 = 17.2 px on the sticky holder and 0.6 * 138 / 3 =
-     * 27.6 px on the wider index card holder. A single letter hits the
-     * 50 px maximum and a 30-letter name the 8 px minimum.
+     * The engraving is centred on the bottom panel and fits inside it,
+     * clear of the edges. The bottom panel is at (50, 230): 86 x 86 on the
+     * sticky holder (centre 93, 273) and 138 x 86 on the index card holder
+     * (centre 119, 273). The wider panel gets a wider engraving.
      */
     @Test
     public void engravingIsCentredAndSizedToBottomPanel() {
@@ -186,19 +196,32 @@ public class NoteHolderBoxTest {
                 .generateSVG();
         String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "Isaac")
                 .generateSVG();
-        String oneLetter = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "A")
-                .generateSVG();
-        String longName = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER,
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD").generateSVG();
 
-        assertTrue(sticky.contains("font-size=\"17.2px\""));
-        assertTrue(sticky.contains("matrix(1 0 0 1 93.000 273.000)"));
+        SvgAssert.assertPathsInside(sticky, new Bounds(50, 230, 86, 86).inset(EngraveStyle.PANEL_MARGIN_MM));
+        SvgAssert.assertPathsInside(index, new Bounds(50, 230, 138, 86).inset(EngraveStyle.PANEL_MARGIN_MM));
 
-        assertTrue(index.contains("font-size=\"27.6px\""));
-        assertTrue(index.contains("matrix(1 0 0 1 119.000 273.000)"));
+        Rectangle2D s = SvgAssert.engravePathBounds(sticky);
+        Rectangle2D i = SvgAssert.engravePathBounds(index);
+        assertEquals(93, s.getCenterX(), 0.01);
+        assertEquals(273, s.getCenterY(), 0.01);
+        assertEquals(119, i.getCenterX(), 0.01);
+        assertEquals(273, i.getCenterY(), 0.01);
+        assertTrue(i.getWidth() > s.getWidth());
+    }
 
-        assertTrue(oneLetter.contains("font-size=\"50.0px\""));
-        assertTrue(longName.contains("font-size=\"8.0px\""));
+    /**
+     * Engravings on the back panel stay above its row of slots, which sits
+     * 12.5 to 15.5 mm up from the bottom edge. The back panel is at (50, 140)
+     * and 86 x 60, so the slots start at y = 184.5.
+     */
+    @Test
+    public void backPanelEngravingStaysAboveTheSlots() {
+        EngravingPlan plan = EngravingPlan.none()
+                .add(NoteHolderBox.BACK, new TextEngraving(List.of("NOTES"), Fonts.defaultFont()));
+        String svg = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, plan).generateSVG();
+
+        assertEquals(1, SvgAssert.countEngravings(svg));
+        assertTrue(SvgAssert.engravePathBounds(svg).getMaxY() < 184.5);
     }
 
     /**
@@ -266,12 +289,13 @@ public class NoteHolderBoxTest {
      */
     @Test
     public void nullEngravingIsSkipped() {
-        String svg   = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, null).generateSVG();
+        String svg   = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, (String) null).generateSVG();
         String blank = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "").generateSVG();
 
         assertTrue(svg.trim().endsWith("</svg>"));
-        assertFalse(svg.contains("fill: rgb(255,0,0)"));
+        assertEquals(0, SvgAssert.countEngravings(svg));
         assertEquals(blank, svg);
+        assertEquals(blank, new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, (EngravingPlan) null).generateSVG());
 
         String[] labels = {"Front Left", "Front Right", "Back Panel",
                            "Side Panel", "Side Panel 2", "Bottom Panel"};

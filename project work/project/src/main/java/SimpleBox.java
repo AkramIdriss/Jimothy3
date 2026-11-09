@@ -8,9 +8,26 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+import java.util.List;
 import java.util.Scanner;
 
+import engraving.Bounds;
+import engraving.CommandLine;
+import engraving.EngravingMenu;
+import engraving.EngravingPlan;
+import engraving.Prompter;
+import engraving.SvgAsciiPreview;
+
 public class SimpleBox {
+
+    // ========== ENGRAVABLE PANELS ==========
+    // The bottom is left out: its slots leave no clean area to engrave.
+    public static final String TOP = "top";
+    public static final String FRONT = "front";
+    public static final String BACK = "back";
+    public static final String RIGHT_SIDE = "right side";
+    public static final String LEFT_SIDE = "left side";
+    public static final List<String> ENGRAVABLE_PANELS = List.of(TOP, FRONT, BACK, RIGHT_SIDE, LEFT_SIDE);
     
     // ========== FRONT PANEL ==========
     public static String makeFrontPanelPath(double x, double y, double width, double height, 
@@ -531,8 +548,17 @@ public class SimpleBox {
         
         return path.toString();
     }
-    // Add this new method to your SimpleBox class
+/**
+ * Original version used by the GUI: engraves {@code monogram} (uppercased) on the top and back
+ * panels. A null or blank monogram means no engraving.
+ */
 public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String monogram) {
+    return generateBoxSVG(width, height, depth, toothWidth, EngravingPlan.fromText(monogram, TOP, BACK));
+}
+
+/** Builds the SVG sheet, engraving whatever {@code engravings} puts on each panel. */
+public static String generateBoxSVG(double width, double height, double depth, double toothWidth, EngravingPlan engravings) {
+    if (engravings == null) engravings = EngravingPlan.none();
     StringBuilder svg = new StringBuilder();
     
     double padding = 50;
@@ -568,11 +594,10 @@ public static String generateBoxSVG(double width, double height, double depth, d
     svg.append("preserveAspectRatio='xMidYMid meet' ");
     svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
     
-    // Style - updated with monogram class
+    // Style
     svg.append("<style>\n");
     svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
     svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
-    svg.append("  .monogram { fill: #666; font-weight: bold; font-family: 'Times New Roman', serif; }\n");
     svg.append("</style>\n");
     
     // Generate panels with labels
@@ -580,16 +605,19 @@ public static String generateBoxSVG(double width, double height, double depth, d
     svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
     svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
                             frontX + width/2, frontY - 10));
+    svg.append(engravings.render(FRONT, new Bounds(frontX, frontY, width, height)));
     
     // Side (right)
     svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
     svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
                             sideX + depth/2, sideY - 10));
+    svg.append(engravings.render(RIGHT_SIDE, new Bounds(sideX, sideY, depth, height)));
     
     // Side (left)
     svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
     svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
                             side2X + depth/2, side2Y - 10));
+    svg.append(engravings.render(LEFT_SIDE, new Bounds(side2X, side2Y, depth, height)));
     
     // Bottom
     svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
@@ -600,66 +628,36 @@ public static String generateBoxSVG(double width, double height, double depth, d
     svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
     svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
                             topX + width/2, topY - 10));
-    
-    // Add monogram to top panel if provided
-    if (monogram != null && !monogram.trim().isEmpty()) {
-        String name = monogram.trim().toUpperCase();
-        double panelX = topX;
-        double panelY = topY;
-        double panelWidth = width;
-        double panelHeight = depth;
-        
-        // Auto-scaling font size
-        double maxFont = panelHeight * 0.6;
-        double minFont = 8.0;
-        double scaledFont = Math.min(maxFont, (panelWidth / (name.length() * 0.6)));
-        scaledFont = Math.max(minFont, scaledFont);
-        
-        svg.append(String.format(
-            "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-            "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-            "class=\"monogram\">%s</text>\n",
-            panelX + panelWidth / 2.0,
-            panelY + panelHeight / 2.0,
-            scaledFont,
-            name
-        ));
-        
-        // Optional: Add monogram to back panel as well (smaller)
-        double backPanelX = backX;
-        double backPanelY = backY;
-        double backPanelWidth = width;
-        double backPanelHeight = height;
-        
-        double backFont = Math.min(backPanelHeight * 0.3, scaledFont * 0.7);
-        backFont = Math.max(5.0, backFont);
-        
-        svg.append(String.format(
-            "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-            "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-            "class=\"monogram\" opacity=\"0.7\">%s</text>\n",
-            backPanelX + backPanelWidth / 2.0,
-            backPanelY + backPanelHeight / 2.0,
-            backFont,
-            name
-        ));
-    }
+    svg.append(engravings.render(TOP, new Bounds(topX, topY, width, depth)));
     
     // Back
     svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
     svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
                             backX + width/2, backY - 10));
+    svg.append(engravings.render(BACK, new Bounds(backX, backY, width, height)));
     
     svg.append("</svg>");
     return svg.toString();
 }
     // ========== MAIN METHOD ==========
-    // ========== MAIN METHOD ==========
+private static final String USAGE = """
+        One-line usage:
+          java -cp target/classes SimpleBox WIDTH HEIGHT DEPTH TOOTH [options]
+        Example:
+          java -cp target/classes SimpleBox 100 60 80 5 --text "Sarah's|Recipes" --font serif
+        """ + CommandLine.optionsHelp(ENGRAVABLE_PANELS);
+
 public static void main(String[] args) {
+    System.setProperty("java.awt.headless", "true"); // fonts/images only; never open a window
+    if (args.length > 0) {
+        runFromArguments(args);
+        return;
+    }
+
     Scanner scanner = new Scanner(System.in);
     
     System.out.println("=== Box Panel Generator ===");
-    System.out.println("Generates Front, Side, and Bottom Panels in one SVG\n");
+    System.out.println("Tip: run with --help to do all of this on one line.\n");
     
     // Get box dimensions
     System.out.print("Box width (mm): ");
@@ -675,33 +673,53 @@ public static void main(String[] args) {
     double toothWidth = scanner.nextDouble();
     scanner.nextLine(); // consume newline
     
-    // Get monogram
-    System.out.print("Enter name or monogram for the top panel (press Enter to skip): ");
-    String monogram = scanner.nextLine().trim();
-    
-    scanner.close();
-    
     // Validate inputs
     if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) {
         System.out.println("Error: All values must be positive!");
         return;
     }
     
-    // Generate SVG using the new method
-    String svgContent = generateBoxSVG(width, height, depth, toothWidth, monogram);
+    // Engravings (text, logos, pictures) on any panel
+    EngravingPlan engravings = EngravingMenu.ask(new Prompter(scanner), ENGRAVABLE_PANELS);
+    scanner.close();
+    
+    save(width, height, depth, toothWidth, engravings, true);
+}
+
+private static void runFromArguments(String[] args) {
+    try {
+        CommandLine line = CommandLine.parse(args, ENGRAVABLE_PANELS);
+        if (line.help()) {
+            System.out.println(USAGE);
+            return;
+        }
+        double[] n = line.positiveNumbers("width", "height", "depth", "tooth width");
+        save(n[0], n[1], n[2], n[3], line.plan(), line.preview());
+    } catch (Exception e) {
+        System.out.println("Error: " + e.getMessage() + "\n");
+        System.out.println(USAGE);
+        System.exit(1);
+    }
+}
+
+private static void save(double width, double height, double depth, double toothWidth,
+                         EngravingPlan engravings, boolean preview) {
+    String svgContent = generateBoxSVG(width, height, depth, toothWidth, engravings);
     
     // Save to file
     String filename = String.format("box_%.0fx%.0fx%.0f_t%.0f.svg", width, height, depth, toothWidth);
-    try {
-        java.io.FileWriter writer = new java.io.FileWriter(filename);
+    try (java.io.FileWriter writer = new java.io.FileWriter(filename)) {
         writer.write(svgContent);
-        writer.close();
-        System.out.println("\nSVG file saved as: " + filename);
-        if (!monogram.isEmpty()) {
-            System.out.println("Monogram: " + monogram.toUpperCase());
-        }
     } catch (Exception e) {
         System.out.println("Error saving file: " + e.getMessage());
+        return;
+    }
+    System.out.println("\nSVG file saved as: " + filename);
+    for (String line : engravings.summary()) {
+        System.out.println("Engraving on " + line);
+    }
+    if (preview) {
+        SvgAsciiPreview.print(svgContent);
     }
 }
 }

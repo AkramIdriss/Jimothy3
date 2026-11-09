@@ -10,7 +10,15 @@ Isaac England - ile22a
 */
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Scanner;
+
+import engraving.Bounds;
+import engraving.CommandLine;
+import engraving.EngravingMenu;
+import engraving.EngravingPlan;
+import engraving.Prompter;
+import engraving.SvgAsciiPreview;
 
 /******************************************************************************
 
@@ -18,12 +26,23 @@ import java.util.Scanner;
  ******************************************************************************/
 
 public class NoteHolderBox {
+
+    // ========== ENGRAVABLE PANELS ==========
+    // The front halves are left out: they are too narrow for a useful engraving.
+    public static final String BOTTOM = "bottom";
+    public static final String BACK = "back";
+    public static final String SIDE = "side";
+    public static final String SIDE_2 = "side 2";
+    public static final List<String> ENGRAVABLE_PANELS = List.of(BOTTOM, BACK, SIDE, SIDE_2);
+
+    /** The back and side panels have a row of slots this far (mm) up from their bottom edge; engravings stay above it. */
+    private static final double SLOT_ROW_CLEARANCE = 16.0;
     
     private double noteWidth;
     private double noteDepth;
     private double noteHeight;
     private double toothWidth;
-    private String engraving;
+    private EngravingPlan engravings;
     
     // Note style constants
     public static final int STICKY_NOTE_HOLDER = 1;      // 86x86x60mm - Standard sticky notes
@@ -31,10 +50,18 @@ public class NoteHolderBox {
     
     private int noteStyle;
     
-    // Constructor with preset styles
+    /**
+     * Original constructor used by the GUI: engraves {@code engraving} (uppercased) on the
+     * bottom panel. A null or blank engraving means no engraving.
+     */
     public NoteHolderBox(int noteStyle, String engraving) {
+        this(noteStyle, EngravingPlan.fromText(engraving, BOTTOM));
+    }
+
+    /** Builds a note holder with whatever {@code engravings} puts on each panel. */
+    public NoteHolderBox(int noteStyle, EngravingPlan engravings) {
         this.noteStyle = noteStyle;
-        this.engraving = engraving;
+        this.engravings = engravings == null ? EngravingPlan.none() : engravings;
         setDimensionsFromStyle(noteStyle);
     }
     
@@ -59,38 +86,6 @@ public class NoteHolderBox {
             noteHeight = 60;
             toothWidth = 5.8;
         }
-    }
-    
-    // Helper method to calculate optimal font size for text to fit in panel
-    private double calculateFontSize(String text, double panelWidth, double panelDepth) {
-        if (text == null || text.isEmpty()) {
-            return 0;
-        }
-        
-        // Leave 20% padding on each side (60% usable width)
-        double usableWidth = panelWidth * 0.6;
-        double usableHeight = panelDepth * 0.6;
-        
-        // Rough approximation: each character is about 0.6em wide for bold sans-serif
-        double charWidth = 0.6;
-        int textLength = text.length();
-        
-        // Calculate font size based on width constraint
-        double fontSizeByWidth = usableWidth / (textLength * charWidth);
-        
-        // Calculate font size based on height constraint (text height is roughly 1em)
-        double fontSizeByHeight = usableHeight;
-        
-        // Use the smaller of the two to ensure it fits
-        double fontSize = Math.min(fontSizeByWidth, fontSizeByHeight);
-        
-        // Set reasonable bounds
-        double minFontSize = 8.0;   // Minimum readable size
-        double maxFontSize = 50.0;  // Maximum size
-        
-        fontSize = Math.max(minFontSize, Math.min(maxFontSize, fontSize));
-		
-        return fontSize;
     }
     
     // ========== FRONT PANEL (LEFT and RIGHT HALVES) ==========
@@ -540,18 +535,21 @@ public class NoteHolderBox {
         svg.append("<path d='").append(backPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel</text>\n",
                                 backX + noteWidth / 2, backY - 10));
+        svg.append(engravings.render(BACK, new Bounds(backX, backY, noteWidth, noteHeight - SLOT_ROW_CLEARANCE)));
         
         // Side Panel 1
         String sidePath = makeSidePanelNHPath(sideX, sideY);
         svg.append("<path d='").append(sidePath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel</text>\n",
                                 sideX + noteDepth / 2, sideY - 10));
+        svg.append(engravings.render(SIDE, new Bounds(sideX, sideY, noteDepth, noteHeight - SLOT_ROW_CLEARANCE)));
         
         // Side Panel 2
         String side2Path = makeSidePanelNHPath(side2X, side2Y);
         svg.append("<path d='").append(side2Path).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel 2</text>\n",
                                 side2X + noteDepth / 2, side2Y - 10));
+        svg.append(engravings.render(SIDE_2, new Bounds(side2X, side2Y, noteDepth, noteHeight - SLOT_ROW_CLEARANCE)));
         
         // Bottom Panel
         String bottomPath = makeBottomPanelNHPath(bottomX, bottomY);
@@ -559,20 +557,7 @@ public class NoteHolderBox {
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel</text>\n",
                                 bottomX + noteWidth / 2, bottomY - 10));
         
-        // Add engraving to bottom panel if provided
-        if (engraving != null && !engraving.isEmpty()) {
-            double centerX = bottomX + noteWidth / 2.0;
-            double centerY = bottomY + noteDepth / 2.0;
-            double fontSize = calculateFontSize(engraving, noteWidth, noteDepth);
-
-            svg.append(
-                "<text dominant-baseline=\"middle\" font-size=\"" + String.format("%.1fpx", fontSize) +
-                "\" style=\"font-family: sans-serif; font-weight: bold; fill: rgb(255,0,0)\" " +
-                "text-anchor=\"middle\" transform=\"matrix(1 0 0 1 " +
-                String.format("%.3f %.3f", centerX, centerY) + ")\">" +
-                engraving.toUpperCase() + "</text>\n"
-            );
-        }
+        svg.append(engravings.render(BOTTOM, new Bounds(bottomX, bottomY, noteWidth, noteDepth)));
         
         svg.append("</svg>");
         return svg.toString();
@@ -586,10 +571,24 @@ public class NoteHolderBox {
     }
     
     // ========== MAIN METHOD ==========
+    private static final String USAGE = """
+            One-line usage:
+              java -cp target/classes NoteHolderBox sticky|index [options]
+            Example:
+              java -cp target/classes NoteHolderBox sticky --text "Notes" --on back
+            """ + CommandLine.optionsHelp(ENGRAVABLE_PANELS);
+
     public static void main(String[] args) {
+        System.setProperty("java.awt.headless", "true"); // fonts/images only; never open a window
+        if (args.length > 0) {
+            runFromArguments(args);
+            return;
+        }
+
         Scanner scanner = new Scanner(System.in);
         
         System.out.println("=== Note Holder Box Generator ===");
+        System.out.println("Tip: run with --help to do all of this on one line.\n");
         System.out.println("Choose your note holder style:\n");
         System.out.println("1. Sticky Note Holder (86 × 86 × 60 mm)");
         System.out.println("2. Indexcard Holder (138 × 86 × 60 mm)");
@@ -598,42 +597,69 @@ public class NoteHolderBox {
         int noteStyle = scanner.nextInt();
         scanner.nextLine(); // consume newline
         
-        // Get engraving text (can be full name now)
-        System.out.print("Enter text for bottom panel engraving (or press Enter to skip): ");
-        String engraving = scanner.nextLine().trim();
-        
-        scanner.close();
-        
         // Validate input
         if (noteStyle < 1 || noteStyle > 2) {
             System.out.println("Invalid style! Using Sticky Note Holder as default.");
             noteStyle = STICKY_NOTE_HOLDER;
         }
         
-        // Create box with chosen style and engraving
-        NoteHolderBox box = new NoteHolderBox(noteStyle, engraving);
+        // Engravings (text, logos, pictures) on any panel
+        EngravingPlan engravings = EngravingMenu.ask(new Prompter(scanner), ENGRAVABLE_PANELS);
+        scanner.close();
         
-        // Generate filename based on style
-        String styleName;
-        if (noteStyle == STICKY_NOTE_HOLDER) {
-            styleName = "StickyNoteHolder";
-        } else{
-            styleName = "IndexcardHolder";
+        save(noteStyle, engravings, true);
+    }
+
+    private static void runFromArguments(String[] args) {
+        try {
+            CommandLine line = CommandLine.parse(args, ENGRAVABLE_PANELS);
+            if (line.help()) {
+                System.out.println(USAGE);
+                return;
+            }
+            if (line.positional().size() != 1) {
+                throw new IllegalArgumentException("Expected one style: sticky or index");
+            }
+            save(parseStyle(line.positional().get(0)), line.plan(), line.preview());
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage() + "\n");
+            System.out.println(USAGE);
+            System.exit(1);
         }
+    }
+
+    private static int parseStyle(String style) {
+        switch (style.toLowerCase()) {
+            case "sticky": case "1":
+                return STICKY_NOTE_HOLDER;
+            case "index": case "indexcard": case "2":
+                return INDEXCARD_HOLDER;
+            default:
+                throw new IllegalArgumentException("Unknown style: " + style + " (use sticky or index)");
+        }
+    }
+
+    private static void save(int noteStyle, EngravingPlan engravings, boolean preview) {
+        NoteHolderBox box = new NoteHolderBox(noteStyle, engravings);
         
+        String styleName = noteStyle == STICKY_NOTE_HOLDER ? "StickyNoteHolder" : "IndexcardHolder";
         String filename = String.format("%s_%.0fx%.0fx%.0f.svg", 
                                        styleName, box.noteWidth, box.noteDepth, box.noteHeight);
         
         try {
             box.saveToFile(filename);
-            System.out.println("\nSVG file saved as: " + filename);
-            System.out.println(String.format("Dimensions: %.0f × %.0f × %.0f mm", 
-                                            box.noteWidth, box.noteDepth, box.noteHeight));
-            if (engraving != null && !engraving.isEmpty()) {
-                System.out.println("Engraving: " + engraving.toUpperCase());
-            }
         } catch (IOException e) {
             System.out.println("Error saving file: " + e.getMessage());
+            return;
+        }
+        System.out.println("\nSVG file saved as: " + filename);
+        System.out.println(String.format("Dimensions: %.0f × %.0f × %.0f mm", 
+                                        box.noteWidth, box.noteDepth, box.noteHeight));
+        for (String line : engravings.summary()) {
+            System.out.println("Engraving on " + line);
+        }
+        if (preview) {
+            SvgAsciiPreview.print(box.generateSVG());
         }
     }
 }

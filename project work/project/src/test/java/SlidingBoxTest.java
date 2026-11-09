@@ -10,6 +10,16 @@ Isaac England - ile22a
 */
 import static org.junit.Assert.*;
 
+import java.awt.geom.Rectangle2D;
+import java.util.Arrays;
+import java.util.List;
+
+import engraving.Bounds;
+import engraving.EngraveStyle;
+import engraving.EngravingPlan;
+import engraving.Fonts;
+import engraving.SvgAssert;
+import engraving.TextEngraving;
 import org.junit.Test;
 
 public class SlidingBoxTest {
@@ -31,9 +41,19 @@ public class SlidingBoxTest {
         assertTrue(svg.contains("Inner: 94 × 77 × 57 mm"));
     }
 
+    /** Outer top and inner bottom panels of a 100 x 80 x 60 sliding box. */
+    private static final Bounds OUTER_TOP    = new Bounds(200, 160, 100, 80);
+    private static final Bounds INNER_BOTTOM = new Bounds(50, 664, 94, 77);
+
+    /** The engraving elements of an SVG sheet, in the order they were drawn. */
+    private static List<String> engravings(String svg) {
+        return Arrays.stream(svg.split("\n")).filter(l -> l.contains("class='engrave'")).toList();
+    }
+
     /**
-     * A monogram is engraved twice, uppercased: red on the outer top panel
-     * and blue on the inner bottom panel. An empty monogram adds neither.
+     * A monogram is engraved twice, uppercased, in the shared engrave colour:
+     * on the outer top panel and on the inner bottom panel. An empty
+     * monogram adds neither.
      */
     @Test
     public void monogramOnOuterTopAndInnerBottom() {
@@ -43,14 +63,13 @@ public class SlidingBoxTest {
         assertTrue(withName.startsWith("<?xml"));
         assertTrue(withName.endsWith("</svg>"));
 
-        int count = withName.split(">ABC</text>", -1).length - 1;
-        assertEquals("Monogram should appear on outer top and inner bottom", 2, count);
-        assertTrue(withName.contains("fill: rgb(255,0,0)"));
-        assertTrue(withName.contains("fill: rgb(0,0,255)"));
-        assertFalse(withName.contains(">abc</text>"));
+        assertEquals("Monogram should appear on outer top and inner bottom", 2,
+                engravings(withName).size());
+        assertTrue(withName.contains("fill='" + EngraveStyle.ENGRAVE_COLOR + "'"));
+        assertEquals("Lowercase is uppercased",
+                new SlidingBox(100, 80, 60, 5, "ABC").generateSVG(), withName);
 
-        assertFalse(blank.contains("fill: rgb(255,0,0)"));
-        assertFalse(blank.contains("fill: rgb(0,0,255)"));
+        assertEquals(0, SvgAssert.countEngravings(blank));
     }
 
         /**
@@ -93,23 +112,39 @@ public class SlidingBoxTest {
     }
 
     /**
-     * Monogram font size is scaled to fit 60% of the panel and clamped to
-     * the range 8 to 50 px. A single letter is limited by panel depth:
-     * 0.6 * 80 = 48 px on the outer top and 0.6 * 77 = 46.2 px on the
-     * smaller inner bottom. A 30-letter name would need about 3.3 px, so
-     * it is raised to the 8 px minimum on both panels.
+     * The monogram is scaled to fit and centred on each panel, keeping clear
+     * of the finger joints. The outer top is 100 x 80 at (200, 160), centre
+     * (250, 200); the inner bottom is 94 x 77 at (50, 664), centre
+     * (97, 702.5). Short and very long names both stay inside.
      */
     @Test
-    public void monogramFontSizeScalesWithPanelAndIsClamped() {
-        String oneLetter = new SlidingBox(100, 80, 60, 5, "A").generateSVG();
-        String longName  = new SlidingBox(100, 80, 60, 5,
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD").generateSVG();
+    public void monogramFitsAndIsCentredOnBothPanels() {
+        for (String name : new String[] {"A", "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD"}) {
+            List<String> parts = engravings(new SlidingBox(100, 80, 60, 5, name).generateSVG());
+            SvgAssert.assertPathsInside(parts.get(0), OUTER_TOP.inset(EngraveStyle.PANEL_MARGIN_MM));
+            SvgAssert.assertPathsInside(parts.get(1), INNER_BOTTOM.inset(EngraveStyle.PANEL_MARGIN_MM));
 
-        assertTrue(oneLetter.contains("font-size=\"48.0px\""));
-        assertTrue(oneLetter.contains("font-size=\"46.2px\""));
+            Rectangle2D top = SvgAssert.engravePathBounds(parts.get(0));
+            Rectangle2D bottom = SvgAssert.engravePathBounds(parts.get(1));
+            assertEquals(250, top.getCenterX(), 0.01);
+            assertEquals(200, top.getCenterY(), 0.01);
+            assertEquals(97, bottom.getCenterX(), 0.01);
+            assertEquals(702.5, bottom.getCenterY(), 0.01);
+        }
+    }
 
-        int minSized = longName.split("font-size=\"8\\.0px\"", -1).length - 1;
-        assertEquals("Both monograms should fall back to the minimum", 2, minSized);
+    /** With an EngravingPlan, any listed panel can be engraved, e.g. the drawer's front. */
+    @Test
+    public void engravingPlanCanTargetAnyPanel() {
+        EngravingPlan plan = EngravingPlan.none()
+                .add(SlidingBox.INNER_FRONT, new TextEngraving(List.of("Pull"), Fonts.defaultFont()));
+        String svg = new SlidingBox(100, 80, 60, 5, plan).generateSVG();
+
+        assertEquals(1, SvgAssert.countEngravings(svg));
+        // inner front: (50, 450), 94 x 57
+        SvgAssert.assertPathsInside(svg, new Bounds(50, 450, 94, 57).inset(EngraveStyle.PANEL_MARGIN_MM));
+        assertFalse("The handle panel can't be engraved",
+                SlidingBox.ENGRAVABLE_PANELS.contains("inner right side"));
     }
 
     /**
@@ -220,12 +255,13 @@ public class SlidingBoxTest {
      */
     @Test
     public void nullMonogramIsSkipped() {
-        String svg   = new SlidingBox(100, 80, 60, 5, null).generateSVG();
+        String svg   = new SlidingBox(100, 80, 60, 5, (String) null).generateSVG();
         String blank = new SlidingBox(100, 80, 60, 5, "").generateSVG();
 
         assertTrue(svg.endsWith("</svg>"));
-        assertFalse(svg.contains("<text dominant-baseline"));
+        assertEquals(0, SvgAssert.countEngravings(svg));
         assertEquals(blank, svg);
+        assertEquals(blank, new SlidingBox(100, 80, 60, 5, (EngravingPlan) null).generateSVG());
     }
 
     /**

@@ -10,7 +10,15 @@ Isaac England - ile22a
 */
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Scanner;
+
+import engraving.Bounds;
+import engraving.CommandLine;
+import engraving.EngravingMenu;
+import engraving.EngravingPlan;
+import engraving.Prompter;
+import engraving.SvgAsciiPreview;
 
 /******************************************************************************
  * Sliding Box - Outer box + Inner sliding drawer
@@ -27,13 +35,28 @@ import java.util.Scanner;
  ******************************************************************************/
 
 public class SlidingBox {
+
+    // ========== ENGRAVABLE PANELS ==========
+    // The inner right side is left out: its handle cut-out leaves no clean area.
+    public static final String OUTER_TOP = "outer top";
+    public static final String OUTER_FRONT = "outer front";
+    public static final String OUTER_BACK = "outer back";
+    public static final String OUTER_SIDE = "outer side";
+    public static final String OUTER_BOTTOM = "outer bottom";
+    public static final String INNER_FRONT = "inner front";
+    public static final String INNER_BACK = "inner back";
+    public static final String INNER_LEFT = "inner left side";
+    public static final String INNER_BOTTOM = "inner bottom";
+    public static final List<String> ENGRAVABLE_PANELS = List.of(
+            OUTER_TOP, OUTER_FRONT, OUTER_BACK, OUTER_SIDE, OUTER_BOTTOM,
+            INNER_FRONT, INNER_BACK, INNER_LEFT, INNER_BOTTOM);
     
     private double outerWidth;
     private double outerDepth;
     private double outerHeight;
     private double toothWidth;
     private double thickness = 3.0;
-	private String monogram;
+	private EngravingPlan engravings;
     
     // Inner box dimensions (auto-calculated)
     private double innerWidth;
@@ -41,13 +64,21 @@ public class SlidingBox {
     private double innerHeight;
 	
     
-    // Constructor
+    /**
+     * Original constructor used by the GUI: engraves {@code monogram} (uppercased) on the
+     * outer top and inner bottom panels. A null or blank monogram means no engraving.
+     */
     public SlidingBox(double width, double depth, double height, double toothWidth, String monogram) {
+        this(width, depth, height, toothWidth, EngravingPlan.fromText(monogram, OUTER_TOP, INNER_BOTTOM));
+    }
+
+    /** Builds a sliding box with whatever {@code engravings} puts on each panel. */
+    public SlidingBox(double width, double depth, double height, double toothWidth, EngravingPlan engravings) {
         this.outerWidth = width;
         this.outerDepth = depth;
         this.outerHeight = height;
         this.toothWidth = toothWidth;
-		this.monogram = monogram;
+		this.engravings = engravings == null ? EngravingPlan.none() : engravings;
         
         // Calculate inner box dimensions to fit inside outer box
         this.innerWidth = outerWidth - (2 * thickness);  // Clearance on left
@@ -835,44 +866,26 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         return path.toString();
     }
     
-	// Helper method to calculate optimal font size for text to fit in panel
-    private double calculateFontSize(String text, double panelWidth, double panelDepth) {
-        if (text == null || text.isEmpty()) {
-            return 0;
-        }
-        
-        // Leave 20% padding on each side (60% usable width)
-        double usableWidth = panelWidth * 0.6;
-        double usableHeight = panelDepth * 0.6;
-        
-        // Rough approximation: each character is about 0.6em wide for bold sans-serif
-        double charWidth = 0.6;
-        int textLength = text.length();
-        
-        // Calculate font size based on width constraint
-        double fontSizeByWidth = usableWidth / (textLength * charWidth);
-        
-        // Calculate font size based on height constraint (text height is roughly 1em)
-        double fontSizeByHeight = usableHeight;
-        
-        // Use the smaller of the two to ensure it fits
-        double fontSize = Math.min(fontSizeByWidth, fontSizeByHeight);
-        
-        // Set reasonable bounds
-        double minFontSize = 8.0;   // Minimum readable size
-        double maxFontSize = 50.0;  // Maximum size
-        
-        fontSize = Math.max(minFontSize, Math.min(maxFontSize, fontSize));
-        
-        return fontSize;
-    }
 	
 	// ========== MAIN METHOD ==========
+    private static final String USAGE = """
+            One-line usage:
+              java -cp target/classes SlidingBox WIDTH HEIGHT DEPTH TOOTH [options]
+            Example:
+              java -cp target/classes SlidingBox 100 60 80 5 --text "Pencils" --on outer-top
+            """ + CommandLine.optionsHelp(ENGRAVABLE_PANELS);
+
     public static void main(String[] args) {
+        System.setProperty("java.awt.headless", "true"); // fonts/images only; never open a window
+        if (args.length > 0) {
+            runFromArguments(args);
+            return;
+        }
+
         Scanner scanner = new Scanner(System.in);
         
         System.out.println("=== Sliding Box Generator ===");
-        System.out.println("Generates OUTER box + INNER sliding drawer\n");
+        System.out.println("Tip: run with --help to do all of this on one line.\n");
         
         System.out.print("Outer box width (mm): ");
         double width = scanner.nextDouble();
@@ -889,32 +902,54 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
 		// MUST clear the leftover newline from nextDouble()
 		scanner.nextLine();
 		
-		// Get monogram
-        System.out.print("Enter name or monogram for the outer top panel (press Enter to skip): ");
-		String monogram = scanner.nextLine().trim();
-		
-        scanner.close();
-        
         if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) {
             System.out.println("Error: All values must be positive!");
             return;
         }
         
-        SlidingBox box = new SlidingBox(width, depth, height, toothWidth, monogram);
+        // Engravings (text, logos, pictures) on any panel
+        EngravingPlan engravings = EngravingMenu.ask(new Prompter(scanner), ENGRAVABLE_PANELS);
+        scanner.close();
+        
+        save(width, height, depth, toothWidth, engravings, true);
+    }
+
+    private static void runFromArguments(String[] args) {
+        try {
+            CommandLine line = CommandLine.parse(args, ENGRAVABLE_PANELS);
+            if (line.help()) {
+                System.out.println(USAGE);
+                return;
+            }
+            double[] n = line.positiveNumbers("width", "height", "depth", "tooth width");
+            save(n[0], n[1], n[2], n[3], line.plan(), line.preview());
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage() + "\n");
+            System.out.println(USAGE);
+            System.exit(1);
+        }
+    }
+
+    private static void save(double width, double height, double depth, double toothWidth,
+                             EngravingPlan engravings, boolean preview) {
+        SlidingBox box = new SlidingBox(width, depth, height, toothWidth, engravings);
         String filename = String.format("SlidingBox_%.0fx%.0fx%.0f.svg", width, depth, height);
         
         try {
             box.saveToFile(filename);
-            System.out.println("\nSVG file saved as: " + filename);
-            System.out.printf("Outer Box: %.0f × %.0f × %.0f mm\n", width, depth, height);
-            System.out.printf("Inner Box: %.0f × %.0f × %.0f mm\n", 
-                             box.innerWidth, box.innerDepth, box.innerHeight);
-			
-			if (monogram != null && !monogram.isEmpty()) {
-				System.out.println("Monogram: " + monogram.toUpperCase() + " (on outer top & inner bottom)");
-			}
         } catch (IOException e) {
             System.out.println("Error saving file: " + e.getMessage());
+            return;
+        }
+        System.out.println("\nSVG file saved as: " + filename);
+        System.out.printf("Outer Box: %.0f × %.0f × %.0f mm\n", width, depth, height);
+        System.out.printf("Inner Box: %.0f × %.0f × %.0f mm\n", 
+                         box.innerWidth, box.innerDepth, box.innerHeight);
+        for (String line : engravings.summary()) {
+            System.out.println("Engraving on " + line);
+        }
+        if (preview) {
+            SvgAsciiPreview.print(box.generateSVG());
         }
     }
 	
@@ -984,18 +1019,21 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         svg.append("<path d='").append(outerFrontPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Panel (Outer)</text>\n",
                                 outerFrontX + outerWidth/2, outerFrontY - 10));
+        svg.append(engravings.render(OUTER_FRONT, new Bounds(outerFrontX, outerFrontY, outerWidth, outerHeight)));
         
         // Outer Side Panel
         String outerSidePath = makeOuterSidePanelPath(outerSideX, outerSideY);
         svg.append("<path d='").append(outerSidePath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel (Outer Left)</text>\n",
                                 outerSideX + outerDepth/2, outerSideY - 10));
+        svg.append(engravings.render(OUTER_SIDE, new Bounds(outerSideX, outerSideY, outerDepth, outerHeight)));
         
         // Outer Back Panel
         String outerBackPath = makeOuterBackPanelPath(outerBackX, outerBackY);
         svg.append("<path d='").append(outerBackPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel (Outer)</text>\n",
                                 outerBackX + outerWidth/2, outerBackY - 10));
+        svg.append(engravings.render(OUTER_BACK, new Bounds(outerBackX, outerBackY, outerWidth, outerHeight)));
         
         // Outer Top Panel
         String outerTopPath = makeOuterTopPanelPath(outerTopX, outerTopY);
@@ -1003,26 +1041,13 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top Panel (Outer)</text>\n",
                                 outerTopX + outerWidth/2, outerTopY - 10));
         
-		// ADD MONOGRAM TO OUTER TOP PANEL
-		if (monogram != null && !monogram.isEmpty()) {
-			double centerX = outerTopX + outerWidth / 2.0;
-			double centerY = outerTopY + outerDepth / 2.0;
-			double fontSize = calculateFontSize(monogram, outerWidth, outerDepth);
-
-			svg.append(
-				"<text dominant-baseline=\"middle\" font-size=\"" + String.format("%.1fpx", fontSize) +
-				"\" style=\"font-family: sans-serif; font-weight: bold; fill: rgb(255,0,0)\" " +
-				"text-anchor=\"middle\" transform=\"matrix(1 0 0 1 " +
-				String.format("%.3f %.3f", centerX, centerY) + ")\">" +
-				monogram.toUpperCase() + "</text>\n"
-			);
-		}
-		
+        svg.append(engravings.render(OUTER_TOP, new Bounds(outerTopX, outerTopY, outerWidth, outerDepth)));
         // Outer Bottom Panel
         String outerBottomPath = makeOuterBottomPanelPath(outerBottomX, outerBottomY);
         svg.append("<path d='").append(outerBottomPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel (Outer)</text>\n",
                                 outerBottomX + outerWidth/2, outerBottomY - 10));
+        svg.append(engravings.render(OUTER_BOTTOM, new Bounds(outerBottomX, outerBottomY, outerWidth, outerDepth)));
         
         // INNER BOX SECTION LABEL
         svg.append(String.format("<text x='%.1f' y='%.1f' class='section-label'>INNER BOX (Sliding Drawer)</text>\n",
@@ -1033,18 +1058,21 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         svg.append("<path d='").append(innerFrontPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Panel (Inner)</text>\n",
                                 innerFrontX + innerWidth/2, innerFrontY - 10));
+        svg.append(engravings.render(INNER_FRONT, new Bounds(innerFrontX, innerFrontY, innerWidth, innerHeight)));
         
         // Inner Left Side Panel
         String innerLeftPath = makeInnerLeftSidePanelPath(innerLeftX, innerLeftY);
         svg.append("<path d='").append(innerLeftPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel (Inner Left)</text>\n",
                                 innerLeftX + innerDepth/2, innerLeftY - 10));
+        svg.append(engravings.render(INNER_LEFT, new Bounds(innerLeftX, innerLeftY, innerDepth, innerHeight)));
         
         // Inner Back Panel
         String innerBackPath = makeInnerBackPanelPath(innerBackX, innerBackY);
         svg.append("<path d='").append(innerBackPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel (Inner)</text>\n",
                                 innerBackX + innerWidth/2, innerBackY - 10));
+        svg.append(engravings.render(INNER_BACK, new Bounds(innerBackX, innerBackY, innerWidth, innerHeight)));
         
         // Inner Right Side Panel (with handle)
         String innerRightPath = makeInnerRightSidePanelPath(innerRightX, innerRightY);
@@ -1058,21 +1086,7 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel (Inner)</text>\n",
                                 innerBottomX + innerWidth/2, innerBottomY - 10));
         
-		// ADD MONOGRAM TO INNER BOTTOM PANEL
-		if (monogram != null && !monogram.isEmpty()) {
-			double centerX = innerBottomX + innerWidth / 2.0;
-			double centerY = innerBottomY + innerDepth / 2.0;
-			double fontSize = calculateFontSize(monogram, innerWidth, innerDepth);
-
-			svg.append(
-				"<text dominant-baseline=\"middle\" font-size=\"" + String.format("%.1fpx", fontSize) +
-				"\" style=\"font-family: sans-serif; font-weight: bold; fill: rgb(0,0,255)\" " +  // Blue for inner
-				"text-anchor=\"middle\" transform=\"matrix(1 0 0 1 " +
-				String.format("%.3f %.3f", centerX, centerY) + ")\">" +
-				monogram.toUpperCase() + "</text>\n"
-			);
-		}
-		
+        svg.append(engravings.render(INNER_BOTTOM, new Bounds(innerBottomX, innerBottomY, innerWidth, innerDepth)));
         // Add dimension info
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label'>Outer: %.0f × %.0f × %.0f mm</text>\n",
                                 padding, totalHeight - 30, outerWidth, outerDepth, outerHeight));

@@ -10,6 +10,16 @@ Isaac England - ile22a
 */
 import static org.junit.Assert.*;
 
+import java.awt.geom.Rectangle2D;
+import java.util.Arrays;
+import java.util.List;
+
+import engraving.Bounds;
+import engraving.EngraveStyle;
+import engraving.EngravingPlan;
+import engraving.Fonts;
+import engraving.SvgAssert;
+import engraving.TextEngraving;
 import org.junit.Test;
 
 public class SimpleBoxTest {
@@ -33,9 +43,18 @@ public class SimpleBoxTest {
         assertTrue(badTooth.endsWith("Z"));
     }
 
+    /** Top and back panels of a 100 x 60 x 80 box (see the layout tests below). */
+    private static final Bounds TOP_PANEL  = new Bounds(200, 160, 100, 80);
+    private static final Bounds BACK_PANEL = new Bounds(50, 302, 100, 60);
+
+    /** The engraving elements of an SVG sheet, in the order they were drawn. */
+    private static List<String> engravings(String svg) {
+        return Arrays.stream(svg.split("\n")).filter(l -> l.contains("class='engrave'")).toList();
+    }
+
     /**
-     * A monogram should be drawn twice (top panel + faded copy on the back),
-     * trimmed of surrounding whitespace. A blank monogram should add nothing.
+     * A monogram should be engraved twice (top panel + back panel), trimmed of
+     * surrounding whitespace and uppercased. A blank monogram should add nothing.
      */
     @Test
     public void generateBoxSvgHandlesMonogram() {
@@ -45,16 +64,15 @@ public class SimpleBoxTest {
         assertTrue(withName.startsWith("<?xml"));
         assertTrue(withName.endsWith("</svg>"));
 
-        int count = withName.split(">JDE</text>", -1).length - 1;
-        assertEquals("Monogram should appear on top and back panels", 2, count);
-        assertFalse(withName.contains(">  JDE  </text>"));
+        assertEquals("Monogram should appear on top and back panels", 2, engravings(withName).size());
+        assertEquals("Surrounding spaces are trimmed",
+                SimpleBox.generateBoxSVG(100, 60, 80, 5, "JDE"), withName);
 
-        assertFalse(blank.contains("class=\"monogram\""));
+        assertEquals(0, SvgAssert.countEngravings(blank));
 
-        // Lowercase input is uppercased in the SVG, like the other boxes
-        String lower = SimpleBox.generateBoxSVG(100, 60, 80, 5, "jde");
-        assertEquals(2, lower.split(">JDE</text>", -1).length - 1);
-        assertFalse(lower.contains(">jde</text>"));
+        // Lowercase input is uppercased, like the other boxes
+        assertEquals(SimpleBox.generateBoxSVG(100, 60, 80, 5, "JDE"),
+                     SimpleBox.generateBoxSVG(100, 60, 80, 5, "jde"));
     }
 
         /**
@@ -160,23 +178,18 @@ public class SimpleBoxTest {
     }
 
     /**
-     * The top monogram is sized to fit the panel: at most 60% of the depth,
-     * at least 8 px. The back copy is 70% of that, capped at 30% of the
-     * height, and never under 5 px. On a 100 x 60 x 80 box a single letter
-     * gets 48 px on top and 18 px on the back; a 30-letter name would need
-     * 5.556 px, so it is raised to 8 px on top and 5.6 px on the back.
+     * The monogram is scaled to fit its panel, keeping clear of the finger
+     * joints (EngraveStyle.PANEL_MARGIN_MM on every side). A single letter is
+     * limited by height and a 30-letter name by width, but both stay inside
+     * the top and back panels.
      */
     @Test
-    public void monogramFontSizeFitsPanelAndHasMinimum() {
-        String oneLetter = SimpleBox.generateBoxSVG(100, 60, 80, 5, "A");
-        String longName  = SimpleBox.generateBoxSVG(100, 60, 80, 5,
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD");
-
-        assertTrue(oneLetter.contains("font-size=\"48.000\""));
-        assertTrue(oneLetter.contains("font-size=\"18.000\""));
-
-        assertTrue(longName.contains("font-size=\"8.000\""));
-        assertTrue(longName.contains("font-size=\"5.600\""));
+    public void monogramFitsInsideTopAndBackPanels() {
+        for (String name : new String[] {"A", "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD"}) {
+            List<String> parts = engravings(SimpleBox.generateBoxSVG(100, 60, 80, 5, name));
+            SvgAssert.assertPathsInside(parts.get(0), TOP_PANEL.inset(EngraveStyle.PANEL_MARGIN_MM));
+            SvgAssert.assertPathsInside(parts.get(1), BACK_PANEL.inset(EngraveStyle.PANEL_MARGIN_MM));
+        }
     }
 
     /**
@@ -187,12 +200,31 @@ public class SimpleBoxTest {
      */
     @Test
     public void monogramIsCentredOnTopAndBackPanels() {
-        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, "JDE");
+        List<String> parts = engravings(SimpleBox.generateBoxSVG(100, 60, 80, 5, "JDE"));
+        Rectangle2D top  = SvgAssert.engravePathBounds(parts.get(0));
+        Rectangle2D back = SvgAssert.engravePathBounds(parts.get(1));
 
-        assertTrue(svg.contains(
-                "<text x=\"250.000\" y=\"200.000\" font-size=\"48.000\""));
-        assertTrue(svg.contains(
-                "<text x=\"100.000\" y=\"332.000\" font-size=\"18.000\""));
+        assertEquals(250, top.getCenterX(), 0.01);
+        assertEquals(200, top.getCenterY(), 0.01);
+        assertEquals(100, back.getCenterX(), 0.01);
+        assertEquals(332, back.getCenterY(), 0.01);
+    }
+
+    /**
+     * With an EngravingPlan, any listed panel can be engraved. Text on the
+     * front panel (at (50, 50), 100 x 60) lands there and nowhere else.
+     */
+    @Test
+    public void engravingPlanCanTargetAnyPanel() {
+        EngravingPlan plan = EngravingPlan.none()
+                .add(SimpleBox.FRONT, new TextEngraving(List.of("Front", "text"), Fonts.defaultFont()));
+        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, plan);
+
+        assertEquals(1, SvgAssert.countEngravings(svg));
+        SvgAssert.assertPathsInside(svg, new Bounds(50, 50, 100, 60).inset(EngraveStyle.PANEL_MARGIN_MM));
+        assertTrue(SimpleBox.ENGRAVABLE_PANELS.contains(SimpleBox.FRONT));
+        assertFalse("The slotted bottom panel can't be engraved",
+                SimpleBox.ENGRAVABLE_PANELS.contains("bottom"));
     }
 
     /**
@@ -281,12 +313,13 @@ public class SimpleBoxTest {
      */
     @Test
     public void nullMonogramIsSkipped() {
-        String svg   = SimpleBox.generateBoxSVG(100, 60, 80, 5, null);
+        String svg   = SimpleBox.generateBoxSVG(100, 60, 80, 5, (String) null);
         String blank = SimpleBox.generateBoxSVG(100, 60, 80, 5, "");
 
         assertTrue(svg.endsWith("</svg>"));
-        assertFalse(svg.contains("class=\"monogram\""));
+        assertEquals(0, SvgAssert.countEngravings(svg));
         assertEquals(6, svg.split("class='cut'", -1).length - 1);
         assertEquals(blank, svg);
+        assertEquals(blank, SimpleBox.generateBoxSVG(100, 60, 80, 5, (EngravingPlan) null));
     }
 }
