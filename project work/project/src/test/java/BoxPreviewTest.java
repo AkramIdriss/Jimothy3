@@ -1,3 +1,5 @@
+package jimothypackage;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -27,12 +29,12 @@ public class BoxPreviewTest {
 
     @Test
     public void slidingBoxIncludingItsHandleArc() {
-        check(new SlidingBox(100, 80, 60, 5, "Pens").generateSVG(), "OUTER BOX", "PENS");
+        check(SlidingBox.generateBoxSVG(100, 60, 80, 5, "Pens"), "OUTER BOX", "PENS");
     }
 
     @Test
     public void noteHolder() {
-        check(new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "Isaac").generateSVG(),
+        check(NoteHolderBox.generateBoxSVG(2, "Isaac"),
                 "Back Panel", "ISAAC");
     }
 

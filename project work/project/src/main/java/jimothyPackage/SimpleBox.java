@@ -8,30 +8,26 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import java.util.List;
-import java.util.Scanner;
 
 import engraving.Bounds;
-import engraving.CommandLine;
-import engraving.EngravingMenu;
 import engraving.EngravingPlan;
-import engraving.Prompter;
-import engraving.SvgAsciiPreview;
 
-public class SimpleBox {
-
-    // ========== ENGRAVABLE PANELS ==========
-    // The bottom is left out: its slots leave no clean area to engrave.
+public class SimpleBox
+{
+    // panels that can be engraved (names used by the engraving menu and --on)
     public static final String TOP = "top";
     public static final String FRONT = "front";
     public static final String BACK = "back";
     public static final String RIGHT_SIDE = "right side";
     public static final String LEFT_SIDE = "left side";
     public static final List<String> ENGRAVABLE_PANELS = List.of(TOP, FRONT, BACK, RIGHT_SIDE, LEFT_SIDE);
-    
-    // ========== FRONT PANEL ==========
-    public static String makeFrontPanelPath(double x, double y, double width, double height, 
-                                           double toothWidth) {
+
+    //front panel
+    public static String makeFrontPanelPath(double x, double y, double width, double height, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         
@@ -84,7 +80,6 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", rightEdgeY));
         
         double remainingHeight = height - topRightCorner - bottomRightCorner;
-        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         int numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         int totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -141,7 +136,6 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", leftEdgeY));
         
         remainingHeight = height - topLeftCorner - bottomLeftCorner;
-        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -166,9 +160,9 @@ public class SimpleBox {
         return path.toString();
     }
     
-    // ========== SIDE PANEL ==========
-    public static String makeSidePanelPath(double x, double y, double width, double height, 
-                                          double toothWidth) {
+    // side panel
+    public static String makeSidePanelPath(double x, double y, double width, double height, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         
@@ -221,7 +215,6 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", rightEdgeY));
         
         double remainingHeight = height - topRightCorner - bottomRightCorner;
-        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         int numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         int totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -278,7 +271,6 @@ public class SimpleBox {
         path.append(String.format("V %.3f ", leftEdgeY));
         
         remainingHeight = height - topLeftCorner - bottomLeftCorner;
-        if (remainingHeight < toothWidth) remainingHeight = toothWidth; // fix: stops zero-height side teeth on small panels
         numTeethVertical = (int) Math.round(remainingHeight / (2.0 * toothWidth));
         if (numTeethVertical < 1) numTeethVertical = 1;
         totalSegmentsVertical = 2 * numTeethVertical - 1;
@@ -303,8 +295,9 @@ public class SimpleBox {
         return path.toString();
     }
     
-    // ========== BOTTOM PANEL ==========
-    public static String makeBottomPanelPath(double x, double y, double width, double depth, double toothWidth) {
+    // bottom panel
+    public static String makeBottomPanelPath(double x, double y, double width, double depth, double toothWidth) 
+    {
         double thickness = 3.0;
         double toothDepth = thickness;
         double brim = 6.0;
@@ -429,8 +422,9 @@ public class SimpleBox {
         return path.toString();
     }
 
-    // ========== TOP PANEL ==========
-    public static String makeTopPanelPath(double x, double y, double width, double depth, double toothWidth) {
+    // top panel
+    public static String makeTopPanelPath(double x, double y, double width, double depth, double toothWidth) 
+    {
         double toothDepth = 3.0;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -548,178 +542,114 @@ public class SimpleBox {
         
         return path.toString();
     }
-/**
- * Original version used by the GUI: engraves {@code monogram} (uppercased) on the top and back
- * panels. A null or blank monogram means no engraving.
- */
-public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String monogram) {
-    return generateBoxSVG(width, height, depth, toothWidth, EngravingPlan.fromText(monogram, TOP, BACK));
-}
 
-/** Builds the SVG sheet, engraving whatever {@code engravings} puts on each panel. */
-public static String generateBoxSVG(double width, double height, double depth, double toothWidth, EngravingPlan engravings) {
-    if (engravings == null) engravings = EngravingPlan.none();
-    StringBuilder svg = new StringBuilder();
-    
-    double padding = 50;
-    double spacing = 50;
-    double brim = 6.0;
-    
-    // Calculate positions
-    double frontX = padding;
-    double frontY = padding;
-    
-    double sideX = frontX + width + spacing;
-    double sideY = padding;
-    
-    double bottomX = padding;
-    double bottomY = frontY + height + spacing;
-    
-    double topX = sideX;
-    double topY = sideY + height + spacing;
-    
-    double backX = padding;
-    double backY = bottomY + (depth + 2*brim) + spacing;
-    
-    double side2X = sideX + depth + spacing;
-    double side2Y = padding;
-    
-    // Calculate total canvas size
-    double totalWidth = Math.max(side2X + depth, frontX + width) + padding;
-    double totalHeight = Math.max(backY + height, topY + width) + padding;
-    
-    // SVG header
-    svg.append("<?xml version='1.0' encoding='UTF-8'?>\n");
-    svg.append(String.format("<svg viewBox='0 0 %.0f %.0f' ", totalWidth, totalHeight));
-    svg.append("preserveAspectRatio='xMidYMid meet' ");
-    svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
-    
-    // Style
-    svg.append("<style>\n");
-    svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
-    svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
-    svg.append("</style>\n");
-    
-    // Generate panels with labels
-    // Front
-    svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
-                            frontX + width/2, frontY - 10));
-    svg.append(engravings.render(FRONT, new Bounds(frontX, frontY, width, height)));
-    
-    // Side (right)
-    svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
-                            sideX + depth/2, sideY - 10));
-    svg.append(engravings.render(RIGHT_SIDE, new Bounds(sideX, sideY, depth, height)));
-    
-    // Side (left)
-    svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
-                            side2X + depth/2, side2Y - 10));
-    svg.append(engravings.render(LEFT_SIDE, new Bounds(side2X, side2Y, depth, height)));
-    
-    // Bottom
-    svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom</text>\n",
-                            bottomX + width/2, bottomY - 10));
-    
-    // Top  
-    svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
-                            topX + width/2, topY - 10));
-    svg.append(engravings.render(TOP, new Bounds(topX, topY, width, depth)));
-    
-    // Back
-    svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
-    svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
-                            backX + width/2, backY - 10));
-    svg.append(engravings.render(BACK, new Bounds(backX, backY, width, height)));
-    
-    svg.append("</svg>");
-    return svg.toString();
-}
-    // ========== MAIN METHOD ==========
-private static final String USAGE = """
-        One-line usage:
-          java -cp target/classes SimpleBox WIDTH HEIGHT DEPTH TOOTH [options]
-        Example:
-          java -cp target/classes SimpleBox 100 60 80 5 --text "Sarah's|Recipes" --font serif
-        """ + CommandLine.optionsHelp(ENGRAVABLE_PANELS);
 
-public static void main(String[] args) {
-    System.setProperty("java.awt.headless", "true"); // fonts/images only; never open a window
-    if (args.length > 0) {
-        runFromArguments(args);
-        return;
+    // generates the SVG of the box, engraving the text (if any) on the top and back panels
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String engraving)
+    {
+        return generateBoxSVG(width, height, depth, toothWidth, EngravingPlan.fromText(engraving, TOP, BACK));
     }
 
-    Scanner scanner = new Scanner(System.in);
-    
-    System.out.println("=== Box Panel Generator ===");
-    System.out.println("Tip: run with --help to do all of this on one line.\n");
-    
-    // Get box dimensions
-    System.out.print("Box width (mm): ");
-    double width = scanner.nextDouble();
-    
-    System.out.print("Box height (mm): ");
-    double height = scanner.nextDouble();
-    
-    System.out.print("Box depth (mm): ");
-    double depth = scanner.nextDouble();
-    
-    System.out.print("Tooth width (mm): ");
-    double toothWidth = scanner.nextDouble();
-    scanner.nextLine(); // consume newline
-    
-    // Validate inputs
-    if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) {
-        System.out.println("Error: All values must be positive!");
-        return;
-    }
-    
-    // Engravings (text, logos, pictures) on any panel
-    EngravingPlan engravings = EngravingMenu.ask(new Prompter(scanner), ENGRAVABLE_PANELS);
-    scanner.close();
-    
-    save(width, height, depth, toothWidth, engravings, true);
-}
+    // generates the SVG of the box, engraving whatever the plan puts on each panel
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, EngravingPlan engravings)
+    {
+        if (engravings == null) engravings = EngravingPlan.none();
 
-private static void runFromArguments(String[] args) {
-    try {
-        CommandLine line = CommandLine.parse(args, ENGRAVABLE_PANELS);
-        if (line.help()) {
-            System.out.println(USAGE);
-            return;
+        // Validate inputs
+        if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) 
+        {
+            System.out.println("Error: All values must be positive!");
+            return "";
         }
-        double[] n = line.positiveNumbers("width", "height", "depth", "tooth width");
-        save(n[0], n[1], n[2], n[3], line.plan(), line.preview());
-    } catch (Exception e) {
-        System.out.println("Error: " + e.getMessage() + "\n");
-        System.out.println(USAGE);
-        System.exit(1);
-    }
-}
 
-private static void save(double width, double height, double depth, double toothWidth,
-                         EngravingPlan engravings, boolean preview) {
-    String svgContent = generateBoxSVG(width, height, depth, toothWidth, engravings);
-    
-    // Save to file
-    String filename = String.format("box_%.0fx%.0fx%.0f_t%.0f.svg", width, height, depth, toothWidth);
-    try (java.io.FileWriter writer = new java.io.FileWriter(filename)) {
-        writer.write(svgContent);
-    } catch (Exception e) {
-        System.out.println("Error saving file: " + e.getMessage());
-        return;
+        StringBuilder svg = new StringBuilder();
+        
+        double padding = 50;
+        double spacing = 50;
+        double brim = 6.0;
+        
+        // Calculate positions
+        double frontX = padding;
+        double frontY = padding;
+        
+        double sideX = frontX + width + spacing;
+        double sideY = padding;
+        
+        double bottomX = padding;
+        double bottomY = frontY + height + spacing;
+        
+        double topX = sideX;
+        double topY = sideY + height + spacing;
+        
+        double backX = padding;
+        double backY = bottomY + (depth + 2*brim) + spacing;
+        
+        double side2X = sideX + depth + spacing;
+        double side2Y = padding;
+        
+        // Calculate total canvas size
+        double totalWidth = Math.max(side2X + depth, frontX + width) + padding;
+        double totalHeight = Math.max(backY + height, topY + width) + padding;
+        
+        // SVG header
+        svg.append("<?xml version='1.0' encoding='UTF-8'?>\n");
+        svg.append(String.format("<svg viewBox='0 0 %.0f %.0f' ", totalWidth, totalHeight));
+        svg.append("preserveAspectRatio='xMidYMid meet' ");
+        svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
+        
+        // Style
+        svg.append("<style>\n");
+        svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
+        svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
+        svg.append("</style>\n");
+        
+
+
+        // Generate panels with labels
+
+        // Front
+        svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
+                                frontX + width/2, frontY - 10));
+        svg.append(engravings.render(FRONT, new Bounds(frontX, frontY, width, height)));
+
+        // Side (right)
+        svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
+                                sideX + depth/2, sideY - 10));
+        svg.append(engravings.render(RIGHT_SIDE, new Bounds(sideX, sideY, depth, height)));
+
+        // Side (left)
+        svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
+                                side2X + depth/2, side2Y - 10));
+        svg.append(engravings.render(LEFT_SIDE, new Bounds(side2X, side2Y, depth, height)));
+
+        // Bottom
+        svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom</text>\n",
+                                bottomX + width/2, bottomY - 10));
+        
+        // Top  
+        svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
+                                topX + width/2, topY - 10));
+        svg.append(engravings.render(TOP, new Bounds(topX, topY, width, depth)));
+
+        // Back
+        svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
+                                backX + width/2, backY - 10));
+        svg.append(engravings.render(BACK, new Bounds(backX, backY, width, height)));
+
+        svg.append("</svg>");
+        return svg.toString();
     }
-    System.out.println("\nSVG file saved as: " + filename);
-    for (String line : engravings.summary()) {
-        System.out.println("Engraving on " + line);
+
+
+
+    public static void main(String[] args) 
+    {
+
     }
-    if (preview) {
-        SvgAsciiPreview.print(svgContent);
-    }
-}
 }

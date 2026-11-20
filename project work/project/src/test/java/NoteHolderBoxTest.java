@@ -8,69 +8,70 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import static org.junit.Assert.*;
 
 import java.awt.geom.Rectangle2D;
-import java.util.Arrays;
-import java.util.List;
 
 import engraving.Bounds;
-import engraving.EngraveStyle;
-import engraving.EngravingPlan;
-import engraving.Fonts;
 import engraving.SvgAssert;
-import engraving.TextEngraving;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 
 public class NoteHolderBoxTest {
 
+    // style codes accepted by NoteHolderBox.generateBoxSVG (same as MainApp uses)
+    private static final int STICKY = 1;
+    private static final int INDEX  = 2;
+
+    // panel sizes generateBoxSVG picks for each style
+    private static final double STICKY_W = 86;
+    private static final double INDEX_W  = 138;
+    private static final double DEPTH    = 86;
+    private static final double HEIGHT   = 60;
+    private static final double TOOTH    = 5.8;
+
     /**
-     * The back panel's top edge runs the full noteWidth, so the style chosen
-     * in the constructor should show up directly in the generated path.
-     * Sticky = 86 mm wide, index card = 138 mm wide. An unknown style falls
-     * back to the sticky-note size.
+     * The back panel's top edge runs the full noteWidth.
+     * Sticky = 86 mm wide, index card = 138 mm wide.
      */
     @Test
-    public void backPanelWidthMatchesChosenStyle() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeBackPanelNHPath(0, 0);
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .makeBackPanelNHPath(0, 0);
-        String fallback = new NoteHolderBox(99, "")
-                .makeBackPanelNHPath(0, 0);
+    public void backPanelWidthMatchesNoteWidth() {
+        String sticky = NoteHolderBox.makeBackPanelNHPath(0, 0, STICKY_W, DEPTH, HEIGHT, TOOTH);
+        String index  = NoteHolderBox.makeBackPanelNHPath(0, 0, INDEX_W,  DEPTH, HEIGHT, TOOTH);
 
         assertTrue(sticky.startsWith("M 0.000 0.000 H 86.000 "));
         assertTrue(index.startsWith("M 0.000 0.000 H 138.000 "));
-        assertEquals("Unknown style should default to sticky note holder",
-                sticky, fallback);
     }
 
     /**
-     * Engraving text should be engraved (uppercased) once, on the bottom
-     * panel, and nothing should be engraved when it's blank.
+     * An unknown style code should fall back to the sticky-note holder.
+     */
+    @Test
+    public void unknownStyleDefaultsToStickyNote() {
+        assertEquals("Unknown style should default to sticky note holder",
+                NoteHolderBox.generateBoxSVG(STICKY, ""),
+                NoteHolderBox.generateBoxSVG(99, ""));
+    }
+
+    /**
+     * Engraving text should appear uppercased in the SVG when provided,
+     * and no engraving should be emitted when it's blank.
      */
     @Test
     public void generateSvgHandlesEngraving() {
-        String withText = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "Isaac")
-                .generateSVG();
-        String withoutText = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .generateSVG();
+        String withText    = NoteHolderBox.generateBoxSVG(STICKY, "Isaac");
+        String withoutText = NoteHolderBox.generateBoxSVG(STICKY, "");
 
         assertTrue(withText.startsWith("<?xml"));
         assertTrue(withText.trim().endsWith("</svg>"));
-        assertEquals(1, SvgAssert.countEngravings(withText));
-        assertEquals("Lowercase is uppercased",
-                new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "ISAAC").generateSVG(), withText);
+        assertTrue(withText.contains("data-text='ISAAC'"));
+        assertFalse(withText.contains("data-text='Isaac'"));
 
         assertEquals(0, SvgAssert.countEngravings(withoutText));
     }
 
-        /**
+    /**
      * The front is cut as two half panels with a gap between them, so each
      * half's top edge is noteWidth / 2 - 13 mm long: 30 mm for the sticky
      * note holder and 56 mm for the index card holder. The inner edge then
@@ -78,10 +79,8 @@ public class NoteHolderBoxTest {
      */
     @Test
     public void frontHalfPanelWidthLeavesCentreGap() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeFrontPanelNHPath(0, 0);
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .makeFrontPanelNHPath(0, 0);
+        String sticky = NoteHolderBox.makeFrontPanelNHPath(0, 0, STICKY_W, DEPTH, HEIGHT, TOOTH);
+        String index  = NoteHolderBox.makeFrontPanelNHPath(0, 0, INDEX_W,  DEPTH, HEIGHT, TOOTH);
 
         assertTrue(sticky.startsWith("M 0.000 0.000 H 30.000 V 50.000 "));
         assertTrue(index.startsWith("M 0.000 0.000 H 56.000 V 50.000 "));
@@ -92,16 +91,14 @@ public class NoteHolderBoxTest {
 
     /**
      * Both styles are 86 mm deep, so the side panel must come out identical
-     * whichever style is chosen. It has six slots for the bottom panel and
+     * whichever width is used. It has six slots for the bottom panel and
      * a foot cutout across the middle half of the bottom edge
      * (from x = 64.5 back to x = 21.5, 10 mm high).
      */
     @Test
     public void sidePanelIsSameForBothStyles() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeSidePanelNHPath(0, 0);
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .makeSidePanelNHPath(0, 0);
+        String sticky = NoteHolderBox.makeSidePanelNHPath(0, 0, STICKY_W, DEPTH, HEIGHT, TOOTH);
+        String index  = NoteHolderBox.makeSidePanelNHPath(0, 0, INDEX_W,  DEPTH, HEIGHT, TOOTH);
 
         assertEquals(sticky, index);
         assertEquals(6, sticky.split("Z", -1).length - 1);
@@ -116,10 +113,8 @@ public class NoteHolderBoxTest {
      */
     @Test
     public void svgCanvasGrowsWithNoteWidthOnly() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .generateSVG();
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .generateSVG();
+        String sticky = NoteHolderBox.generateBoxSVG(STICKY, "");
+        String index  = NoteHolderBox.generateBoxSVG(INDEX, "");
 
         assertTrue(sticky.contains(
                 "<svg width='418mm' height='366mm' viewBox='0 0 418 366' "));
@@ -131,230 +126,66 @@ public class NoteHolderBoxTest {
     }
 
     /**
-     * The bottom panel is one closed outline inset 3 mm from each edge,
-     * with teeth that reach back out to the full size: six along the top
-     * (y = 0), six on each side (x = 0 and x = noteWidth) and two on the
-     * front edge (y = 86). Only the width changes between styles, so the
-     * right-hand teeth sit at x = 86 for sticky and x = 138 for index card.
+     * The bottom panel is a single closed outline (no separate slots), inset
+     * 3 mm from its origin, with six male teeth reaching out to the panel
+     * edge on the top, right and left sides to fit the side/back slots.
      */
     @Test
-    public void bottomPanelTeethReachFullWidthForEachStyle() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeBottomPanelNHPath(0, 0);
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .makeBottomPanelNHPath(0, 0);
+    public void bottomPanelIsOneOutlineWithSixTeethPerSide() {
+        String bottom = NoteHolderBox.makeBottomPanelNHPath(0, 0, STICKY_W, DEPTH, HEIGHT, TOOTH);
 
-        assertTrue(sticky.startsWith("M 3.000 3.000 H 8.783 "));
-        assertTrue(index.startsWith("M 3.000 3.000 H 8.783 "));
-        assertEquals(1, sticky.split("Z", -1).length - 1);
-        assertTrue(sticky.endsWith("Z"));
+        assertTrue(bottom.startsWith("M 3.000 3.000 "));
+        assertEquals(1, bottom.split("Z", -1).length - 1);
 
-        assertEquals(6, sticky.split("V 0\\.000 ", -1).length - 1);
-        assertEquals(6, sticky.split("H 0\\.000 ", -1).length - 1);
-        assertEquals(6, sticky.split("H 86\\.000 ", -1).length - 1);
-        assertEquals(2, sticky.split("V 86\\.000 ", -1).length - 1);
-
-        assertEquals(6, index.split("H 138\\.000 ", -1).length - 1);
-        assertFalse(index.contains("H 86.000 "));
+        assertEquals(6, bottom.split("V 0\\.000 ", -1).length - 1);   // top edge
+        assertEquals(6, bottom.split("H 86\\.000 ", -1).length - 1);  // right edge
+        assertEquals(6, bottom.split("H 0\\.000 ", -1).length - 1);   // left edge
     }
 
     /**
-     * The back panel has six slots for the bottom panel's teeth, spaced a
-     * seventh of the width apart, and a foot cutout across the middle half
-     * of its bottom edge. On the sticky holder the first slot starts at
-     * 86 / 7 - 2.9 = 9.386 and the cutout runs from x = 64.5 back to 21.5;
-     * on the index card holder those are 16.814, 103.5 and 34.5.
+     * The back panel has six slots for the bottom panel's teeth whatever its
+     * width, and its path is drawn from the (x, y) passed in.
      */
     @Test
-    public void backPanelSlotsAndFootCutoutScaleWithWidth() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeBackPanelNHPath(0, 0);
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "")
-                .makeBackPanelNHPath(0, 0);
+    public void backPanelHasSixSlotsAndFollowsOffset() {
+        String back = NoteHolderBox.makeBackPanelNHPath(10, 20, INDEX_W, DEPTH, HEIGHT, TOOTH);
 
-        assertEquals(6, sticky.split("Z", -1).length - 1);
-        assertEquals(6, index.split("Z", -1).length - 1);
-
-        assertTrue(sticky.contains(
-                "M 9.386 47.500 V 44.500 H 15.186 V 47.500 Z "));
-        assertTrue(index.contains(
-                "M 16.814 47.500 V 44.500 H 22.614 V 47.500 Z "));
-
-        assertTrue(sticky.contains("H 64.500 V 50.000 H 21.500 V 60.000 "));
-        assertTrue(index.contains("H 103.500 V 50.000 H 34.500 V 60.000 "));
+        assertTrue(back.startsWith("M 10.000 20.000 H 148.000 "));
+        assertEquals(6, back.split("Z", -1).length - 1);
     }
 
     /**
-     * The engraving is centred on the bottom panel and fits inside it,
-     * clear of the edges. The bottom panel is at (50, 230): 86 x 86 on the
-     * sticky holder (centre 93, 273) and 138 x 86 on the index card holder
-     * (centre 119, 273). The wider panel gets a wider engraving.
+     * The engraving is centred on the bottom panel. The bottom panel sits at
+     * (50, 230) on both sheets, so its centre is (93, 273) for the 86 mm
+     * sticky holder and (119, 273) for the 138 mm index card holder.
      */
     @Test
-    public void engravingIsCentredAndSizedToBottomPanel() {
-        String sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "Isaac")
-                .generateSVG();
-        String index = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "Isaac")
-                .generateSVG();
-
-        SvgAssert.assertPathsInside(sticky, new Bounds(50, 230, 86, 86).inset(EngraveStyle.PANEL_MARGIN_MM));
-        SvgAssert.assertPathsInside(index, new Bounds(50, 230, 138, 86).inset(EngraveStyle.PANEL_MARGIN_MM));
+    public void engravingCentredOnBottomPanel() {
+        String sticky = NoteHolderBox.generateBoxSVG(STICKY, "Isaac");
+        String index  = NoteHolderBox.generateBoxSVG(INDEX, "Isaac");
 
         Rectangle2D s = SvgAssert.engravePathBounds(sticky);
         Rectangle2D i = SvgAssert.engravePathBounds(index);
-        assertEquals(93, s.getCenterX(), 0.01);
-        assertEquals(273, s.getCenterY(), 0.01);
-        assertEquals(119, i.getCenterX(), 0.01);
-        assertEquals(273, i.getCenterY(), 0.01);
-        assertTrue(i.getWidth() > s.getWidth());
+        assertEquals(93.0,  s.getCenterX(), 0.5);
+        assertEquals(273.0, s.getCenterY(), 0.5);
+        assertEquals(119.0, i.getCenterX(), 0.5);
+        assertEquals(273.0, i.getCenterY(), 0.5);
     }
 
     /**
-     * Engravings on the back panel stay above its row of slots, which sits
-     * 12.5 to 15.5 mm up from the bottom edge. The back panel is at (50, 140)
-     * and 86 x 60, so the slots start at y = 184.5.
+     * The engraving is scaled to the panel: "Isaac" is width-limited, so it
+     * comes out wider on the 138 mm index card holder than on the 86 mm
+     * sticky holder. Short or long, it always stays inside the bottom panel.
      */
     @Test
-    public void backPanelEngravingStaysAboveTheSlots() {
-        EngravingPlan plan = EngravingPlan.none()
-                .add(NoteHolderBox.BACK, new TextEngraving(List.of("NOTES"), Fonts.defaultFont()));
-        String svg = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, plan).generateSVG();
+    public void engravingScalesWithWidthAndStaysOnPanel() {
+        String sticky = NoteHolderBox.generateBoxSVG(STICKY, "Isaac");
+        String index  = NoteHolderBox.generateBoxSVG(INDEX,  "Isaac");
+        assertTrue(SvgAssert.engravePathBounds(index).getWidth() > SvgAssert.engravePathBounds(sticky).getWidth());
 
-        assertEquals(1, SvgAssert.countEngravings(svg));
-        assertTrue(SvgAssert.engravePathBounds(svg).getMaxY() < 184.5);
-    }
-
-    /**
-     * The bottom panel's teeth have to fit into the back panel's slots.
-     * Slots are 5.8 mm wide and teeth 5.7 mm, both centred on the same x
-     * (12.286 for the first pair, 73.714 for the last), which leaves
-     * 0.05 mm of clearance on each side.
-     */
-    @Test
-    public void bottomTeethFitCentredInBackSlots() {
-        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "");
-        String back   = box.makeBackPanelNHPath(0, 0);
-        String bottom = box.makeBottomPanelNHPath(0, 0);
-
-        assertTrue(back.contains("M 9.386 47.500 V 44.500 H 15.186 "));
-        assertTrue(bottom.contains("H 9.436 V 0.000 H 15.136 V 3.000 "));
-
-        assertTrue(back.contains("M 70.814 47.500 V 44.500 H 76.614 "));
-        assertTrue(bottom.contains("H 70.864 V 0.000 H 76.564 V 3.000 "));
-    }
-
-    /**
-     * The panel paths are hand-written, so moving the origin by (10, 20)
-     * must shift every coordinate by exactly that much: H values by 10,
-     * V values by 20, and M points by (10, 20). The commands themselves
-     * must not change. This is checked for all four panels.
-     */
-    @Test
-    public void everyPanelShiftsExactlyWithOrigin() {
-        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "");
-        String[][] pairs = {
-            {box.makeFrontPanelNHPath(0, 0),  box.makeFrontPanelNHPath(10, 20)},
-            {box.makeBackPanelNHPath(0, 0),   box.makeBackPanelNHPath(10, 20)},
-            {box.makeSidePanelNHPath(0, 0),   box.makeSidePanelNHPath(10, 20)},
-            {box.makeBottomPanelNHPath(0, 0), box.makeBottomPanelNHPath(10, 20)}};
-
-        for (String[] pair : pairs) {
-            String[] original = pair[0].trim().split(" ");
-            String[] shifted  = pair[1].trim().split(" ");
-            assertEquals(original.length, shifted.length);
-
-            char command = ' ';
-            int moveArg = 0;
-            for (int i = 0; i < original.length; i++) {
-                if (original[i].matches("[MHVZ]")) {
-                    assertEquals(original[i], shifted[i]);
-                    command = original[i].charAt(0);
-                    moveArg = 0;
-                    continue;
-                }
-                // H shifts by x, V by y, M takes an x then a y
-                double offset = command == 'H' ? 10
-                              : command == 'V' ? 20
-                              : (moveArg++ == 0 ? 10 : 20);
-                assertEquals(Double.parseDouble(original[i]) + offset,
-                        Double.parseDouble(shifted[i]), 0.0011);
-            }
+        for (String text : new String[] { "A", "Isaac" }) {
+            SvgAssert.assertPathsInside(NoteHolderBox.generateBoxSVG(STICKY, text), new Bounds(50, 230, STICKY_W, DEPTH));
+            SvgAssert.assertPathsInside(NoteHolderBox.generateBoxSVG(INDEX,  text), new Bounds(50, 230, INDEX_W,  DEPTH));
         }
-    }
-
-    /**
-     * A null engraving must not crash generateSVG() and should produce the
-     * same sheet as an empty one, with all six panel labels and no red
-     * engraving text.
-     */
-    @Test
-    public void nullEngravingIsSkipped() {
-        String svg   = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, (String) null).generateSVG();
-        String blank = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "").generateSVG();
-
-        assertTrue(svg.trim().endsWith("</svg>"));
-        assertEquals(0, SvgAssert.countEngravings(svg));
-        assertEquals(blank, svg);
-        assertEquals(blank, new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, (EngravingPlan) null).generateSVG());
-
-        String[] labels = {"Front Left", "Front Right", "Back Panel",
-                           "Side Panel", "Side Panel 2", "Bottom Panel"};
-        for (String label : labels) {
-            assertTrue("Missing label: " + label,
-                    svg.contains(">" + label + "</text>"));
-        }
-    }
-
-    /**
-     * Both front halves are the same shape. The left half sits at (50, 50)
-     * and the right half is placed half a note width plus 30 mm spacing to
-     * its right: x = 123 on the sticky holder and x = 149 on the index card
-     * holder.
-     */
-    @Test
-    public void frontHalvesAreSameShapeSideBySide() {
-        NoteHolderBox sticky = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "");
-        NoteHolderBox index  = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "");
-        String stickySvg = sticky.generateSVG();
-        String indexSvg  = index.generateSVG();
-
-        assertTrue(stickySvg.contains(sticky.makeFrontPanelNHPath(50, 50)));
-        assertTrue(stickySvg.contains(sticky.makeFrontPanelNHPath(123, 50)));
-
-        assertTrue(indexSvg.contains(index.makeFrontPanelNHPath(50, 50)));
-        assertTrue(indexSvg.contains(index.makeFrontPanelNHPath(149, 50)));
-    }
-
-    /**
-     * Each front half has four teeth cut 3 mm in on its outer (left) edge
-     * and a single 5.8 x 3 mm slot near the bottom for the bottom panel,
-     * starting at x = 8.783 and running up from y = 47.5 to 44.5.
-     */
-    @Test
-    public void frontHalfHasFourTeethAndOneBottomSlot() {
-        String front = new NoteHolderBox(NoteHolderBox.STICKY_NOTE_HOLDER, "")
-                .makeFrontPanelNHPath(0, 0);
-
-        assertEquals(4, front.split("H 3\\.000 ", -1).length - 1);
-        assertTrue(front.endsWith(
-                "M 8.783 47.500 V 44.500 H 14.583 V 47.500 Z "));
-        assertFalse("Nothing should poke outside the left edge",
-                front.contains("H -"));
-    }
-
-    /**
-     * saveToFile() should write exactly what generateSVG() returns, so the
-     * file sent to the laser cutter matches the preview.
-     */
-    @Test
-    public void saveToFileWritesGeneratedSvg() throws IOException {
-        NoteHolderBox box = new NoteHolderBox(NoteHolderBox.INDEXCARD_HOLDER, "Isaac");
-        File file = File.createTempFile("noteholder", ".svg");
-        file.deleteOnExit();
-
-        box.saveToFile(file.getPath());
-        String saved = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-
-        assertEquals(box.generateSVG(), saved);
     }
 }

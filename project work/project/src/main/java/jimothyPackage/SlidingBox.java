@@ -8,36 +8,16 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
-import java.io.FileWriter;
-import java.io.IOException;
+package jimothypackage;
+
 import java.util.List;
-import java.util.Scanner;
 
 import engraving.Bounds;
-import engraving.CommandLine;
-import engraving.EngravingMenu;
 import engraving.EngravingPlan;
-import engraving.Prompter;
-import engraving.SvgAsciiPreview;
 
-/******************************************************************************
- * Sliding Box - Outer box + Inner sliding drawer
- * 
- * OUTER BOX (5 panels):
- * - Front, Back, Left Side, Top, Bottom
- * - Right edges flat for sliding
- * 
- * INNER BOX (5 panels):
- * - Front, Back, Left Side, Right Side, Bottom
- * - NO TOP (open)
- * - All top edges FLAT
- * - Semicircle handle on right side panel
- ******************************************************************************/
-
-public class SlidingBox {
-
-    // ========== ENGRAVABLE PANELS ==========
-    // The inner right side is left out: its handle cut-out leaves no clean area.
+public class SlidingBox 
+{
+    // panels that can be engraved (names used by the engraving menu and --on)
     public static final String OUTER_TOP = "outer top";
     public static final String OUTER_FRONT = "outer front";
     public static final String OUTER_BACK = "outer back";
@@ -50,73 +30,45 @@ public class SlidingBox {
     public static final List<String> ENGRAVABLE_PANELS = List.of(
             OUTER_TOP, OUTER_FRONT, OUTER_BACK, OUTER_SIDE, OUTER_BOTTOM,
             INNER_FRONT, INNER_BACK, INNER_LEFT, INNER_BOTTOM);
-    
-    private double outerWidth;
-    private double outerDepth;
-    private double outerHeight;
-    private double toothWidth;
-    private double thickness = 3.0;
-	private EngravingPlan engravings;
-    
-    // Inner box dimensions (auto-calculated)
-    private double innerWidth;
-    private double innerDepth;
-    private double innerHeight;
-	
-    
-    /**
-     * Original constructor used by the GUI: engraves {@code monogram} (uppercased) on the
-     * outer top and inner bottom panels. A null or blank monogram means no engraving.
-     */
-    public SlidingBox(double width, double depth, double height, double toothWidth, String monogram) {
-        this(width, depth, height, toothWidth, EngravingPlan.fromText(monogram, OUTER_TOP, INNER_BOTTOM));
-    }
 
-    /** Builds a sliding box with whatever {@code engravings} puts on each panel. */
-    public SlidingBox(double width, double depth, double height, double toothWidth, EngravingPlan engravings) {
-        this.outerWidth = width;
-        this.outerDepth = depth;
-        this.outerHeight = height;
-        this.toothWidth = toothWidth;
-		this.engravings = engravings == null ? EngravingPlan.none() : engravings;
-        
-        // Calculate inner box dimensions to fit inside outer box
-        this.innerWidth = outerWidth - (2 * thickness);  // Clearance on left
-        this.innerDepth = outerDepth - thickness;        // Slides in from right
-        this.innerHeight = outerHeight - thickness;      // Clearance on bottom
-    }
-    
-    // ========== OUTER BOX PANELS ==========
+    // outer box
     
     // OUTER FRONT PANEL (NO teeth on right side)
-    public String makeOuterFrontPanelPath(double x, double y) {
-        return makeFrontPanelPath(x, y, outerWidth, outerHeight, true);
+    public static String makeOuterFrontPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeFrontPanelPath(x, y, width, height, depth, toothWidth, engraving, true, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
     // OUTER BACK PANEL (NO teeth on right side)
-    public String makeOuterBackPanelPath(double x, double y) {
-        return makeFrontPanelPath(x, y, outerWidth, outerHeight, true);
+    public static String makeOuterBackPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeFrontPanelPath(x, y, width, height, depth, toothWidth, engraving, true, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
     // OUTER SIDE PANEL (Left only)
-    public String makeOuterSidePanelPath(double x, double y) {
-        return makeSidePanelPath(x, y, outerDepth, outerHeight);
+    public static String makeOuterSidePanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeSidePanelPath(x, y, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
     // OUTER TOP PANEL (NO teeth on right side)
-    public String makeOuterTopPanelPath(double x, double y) {
-        return makeTopPanelPath(x, y, outerWidth, outerDepth, true);
+    public static String makeOuterTopPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeTopPanelPath(x, y, width, height, depth, toothWidth, engraving, true, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
     // OUTER BOTTOM PANEL (Same as top)
-    public String makeOuterBottomPanelPath(double x, double y) {
-        return makeTopPanelPath(x, y, outerWidth, outerDepth, true);
+    public static String makeOuterBottomPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeTopPanelPath(x, y, width, height, depth, toothWidth, engraving, true, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
-    // ========== INNER BOX PANELS ==========
+
+    // inner box panels
     
     // INNER FRONT PANEL (NO teeth on top - flat top, MALE left/right, FEMALE bottom)
-    public String makeInnerFrontPanelPath(double x, double y) {
+    public static String makeInnerFrontPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness)
+    {
         double toothDepth = thickness;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -142,7 +94,8 @@ public class SlidingBox {
         boolean isToothOut = true;
         double currentY = y;
         
-        for (int i = 0; i < totalSegmentsVertical; i++) {
+        for (int i = 0; i < totalSegmentsVertical; i++) 
+        {
             if (isToothOut) {
                 path.append(String.format("H %.3f ", rightEdgeX - toothDepth));
                 path.append(String.format("V %.3f ", currentY + segmentHeight));
@@ -172,12 +125,16 @@ public class SlidingBox {
         boolean isHoleIn = true;
         double currentX = bottomEdgeX;
         
-        for (int i = 0; i < totalSegmentsHorizontal; i++) {
-            if (isHoleIn) {
+        for (int i = 0; i < totalSegmentsHorizontal; i++) 
+        {
+            if (isHoleIn) 
+            {
                 path.append(String.format("V %.3f ", bottomEdgeY + toothDepth));
                 path.append(String.format("H %.3f ", currentX - segmentWidth));
                 path.append(String.format("V %.3f ", bottomEdgeY));
-            } else {
+            } 
+            else 
+            {
                 path.append(String.format("H %.3f ", currentX - segmentWidth));
             }
             currentX -= segmentWidth;
@@ -200,12 +157,15 @@ public class SlidingBox {
         currentY = leftEdgeY;
 
         for (int i = 0; i < totalSegmentsVertical; i++) {
-            if (isToothOut) {
+            if (isToothOut) 
+            {
                 // CHANGE: leftEdgeX + toothDepth (RIGHT) instead of leftEdgeX - toothDepth (LEFT)
                 path.append(String.format("H %.3f ", leftEdgeX + toothDepth)); // RIGHT for female
                 path.append(String.format("V %.3f ", currentY - segmentHeight));
                 path.append(String.format("H %.3f ", leftEdgeX)); // LEFT back
-            } else {
+            } 
+            else 
+            {
                 path.append(String.format("V %.3f ", currentY - segmentHeight));
             }
             currentY -= segmentHeight;
@@ -215,14 +175,17 @@ public class SlidingBox {
         path.append(String.format("V %.3f ", y));
         path.append("Z");
         return path.toString();
-            }
+    }
+    
     // INNER BACK PANEL (identical to front)
-    public String makeInnerBackPanelPath(double x, double y) {
-        return makeInnerFrontPanelPath(x, y);
+    public static String makeInnerBackPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        return makeInnerFrontPanelPath(x, y, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
     }
     
     // INNER LEFT SIDE PANEL (NO teeth on top - flat top, FEMALE left/right, FEMALE bottom)
-    public String makeInnerLeftSidePanelPath(double x, double y) {
+    public static String makeInnerLeftSidePanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
         double toothDepth = thickness;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -323,8 +286,9 @@ public class SlidingBox {
     }
     
     // INNER RIGHT SIDE PANEL (identical to left + SEMICIRCLE HANDLE)
-    public String makeInnerRightSidePanelPath(double x, double y) {
-        String basePath = makeInnerLeftSidePanelPath(x, y);
+    public static String makeInnerRightSidePanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
+        String basePath = makeInnerLeftSidePanelPath(x, y, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         
         // Add semicircle handle cutout (INWARD curve at top)
         double handleWidth = innerDepth * 0.5;   // 50% of depth
@@ -348,7 +312,8 @@ public class SlidingBox {
     }
     
     // INNER BOTTOM PANEL (All edges MALE to fit into FEMALE holes)
-    public String makeInnerBottomPanelPath(double x, double y) {
+    public static String makeInnerBottomPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
     double toothDepth = thickness;
     
     if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -381,10 +346,13 @@ public class SlidingBox {
     
     boolean toothOut = false; // Changed from true to false - start with SPACE (female)
     for (int i = 0; i < totalSegmentsWidth; i++) {
-        if (toothOut) {
+        if (toothOut) 
+        {
             // WAS: Male tooth (protrude UP) - NOW: Space (just move right)
             path.append(String.format("H %.3f ", curX + segmentWidth));
-        } else {
+        } 
+        else 
+        {
             // WAS: Space (just move right) - NOW: Female tooth (indent DOWN)
             path.append(String.format("V %.3f ", y + toothDepth)); // DOWN instead of UP
             path.append(String.format("H %.3f ", curX + segmentWidth));
@@ -402,10 +370,13 @@ public class SlidingBox {
     
     toothOut = false; // Changed from true to false - start with SPACE (female)
     for (int i = 0; i < totalSegmentsDepth; i++) {
-        if (toothOut) {
+        if (toothOut) 
+        {
             // WAS: Male tooth (protrude RIGHT) - NOW: Space (just move down)
             path.append(String.format("V %.3f ", curY + segmentDepth));
-        } else {
+        } 
+        else
+        {
             // WAS: Space (just move down) - NOW: Female tooth (indent LEFT)
             path.append(String.format("H %.3f ", curX - toothDepth)); // LEFT instead of RIGHT
             path.append(String.format("V %.3f ", curY + segmentDepth));
@@ -463,15 +434,21 @@ public class SlidingBox {
     return path.toString();
 }
     
-    // ========== HELPER METHODS ==========
+    // other methods
     
     // Generic front/back panel (can disable right teeth)
-    private String makeFrontPanelPath(double x, double y, double width, double height, boolean flatRight) {
+    private static String makeFrontPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, boolean flatRight, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
         double toothDepth = thickness;
         
-        if (toothWidth <= 0.0) toothWidth = 2.0;
-        if (width <= 0.0) width = 1.0;
-        if (height <= 0.0) height = 1.0;
+        if (toothWidth <= 0.0) 
+            toothWidth = 2.0;
+        
+        if (width <= 0.0) 
+            width = 1.0;
+        
+        if (height <= 0.0) 
+            height = 1.0;
         
         double corner = toothWidth * 2;
         double topLeftCorner = corner;
@@ -561,7 +538,8 @@ public class SlidingBox {
         isHoleIn = true;
         currentX = bottomEdgeX;
 
-        for (int i = 0; i < totalSegmentsHorizontal; i++) {
+        for (int i = 0; i < totalSegmentsHorizontal; i++) 
+        {
             if (isHoleIn) {
                 // CHANGE THIS LINE: + toothedepth to - toothedepth
                 path.append(String.format("V %.3f ", bottomEdgeY - toothDepth)); // UP (male)
@@ -588,12 +566,16 @@ public class SlidingBox {
         boolean isToothIn = true;
         double currentY = leftEdgeY;
         
-        for (int i = 0; i < totalSegmentsVertical; i++) {
-            if (isToothIn) {
+        for (int i = 0; i < totalSegmentsVertical; i++) 
+        {
+            if (isToothIn)
+            {
                 path.append(String.format("H %.3f ", leftEdgeX + toothDepth));
                 path.append(String.format("V %.3f ", currentY - segmentHeight));
                 path.append(String.format("H %.3f ", leftEdgeX));
-            } else {
+            } 
+            else 
+            {
                 path.append(String.format("V %.3f ", currentY - segmentHeight));
             }
             currentY -= segmentHeight;
@@ -605,7 +587,8 @@ public class SlidingBox {
     }
     
     // Side panel
-    private String makeSidePanelPath(double x, double y, double depth, double height) {
+    private static String makeSidePanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
         double toothDepth = thickness;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -636,12 +619,16 @@ public class SlidingBox {
         path.append(String.format("H %.3f ", currentX + topLeftCorner));
         currentX += topLeftCorner;
         
-        for (int i = 0; i < totalSegmentsHorizontal; i++) {
-            if (isHoleIn) {
+        for (int i = 0; i < totalSegmentsHorizontal; i++) 
+        {
+            if (isHoleIn) 
+            {
                 path.append(String.format("V %.3f ", y + toothDepth));
                 path.append(String.format("H %.3f ", currentX + segmentWidth));
                 path.append(String.format("V %.3f ", y));
-            } else {
+            } 
+            else
+            {
                 path.append(String.format("H %.3f ", currentX + segmentWidth));
             }
             currentX += segmentWidth;
@@ -665,12 +652,16 @@ public class SlidingBox {
         boolean isToothIn = true;
         double currentY = rightEdgeY;
         
-        for (int i = 0; i < totalSegmentsVertical; i++) {
-            if (isToothIn) {
+        for (int i = 0; i < totalSegmentsVertical; i++) 
+        {
+            if (isToothIn) 
+            {
                 path.append(String.format("H %.3f ", rightEdgeX + toothDepth));
                 path.append(String.format("V %.3f ", currentY + segmentHeight));
                 path.append(String.format("H %.3f ", rightEdgeX));
-            } else {
+            } 
+            else 
+            {
                 path.append(String.format("V %.3f ", currentY + segmentHeight));
             }
             currentY += segmentHeight;
@@ -741,7 +732,8 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
     }
     
     // Top/Bottom panel (can disable right teeth)
-    private String makeTopPanelPath(double x, double y, double width, double depth, boolean flatRight) {
+    private static String makeTopPanelPath(double x, double y, double width, double height, double depth, double toothWidth, String engraving, boolean flatRight, double innerWidth, double outerWidth, double innerDepth, double outerDepth, double innerHeight, double outerHeight, double thickness) 
+    {
         double toothDepth = thickness;
         
         if (toothWidth <= 0.0) toothWidth = 2.0;
@@ -798,7 +790,8 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
         path.append(String.format("H %.3f ", curX));
         
         // RIGHT EDGE - FLAT or with teeth
-        if (flatRight) {
+        if (flatRight) 
+        {
             path.append(String.format("V %.3f ", y + depth));
             double curY = y + depth;
             curX -= bottomRightCorner;
@@ -867,94 +860,34 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
     }
     
 	
-	// ========== MAIN METHOD ==========
-    private static final String USAGE = """
-            One-line usage:
-              java -cp target/classes SlidingBox WIDTH HEIGHT DEPTH TOOTH [options]
-            Example:
-              java -cp target/classes SlidingBox 100 60 80 5 --text "Pencils" --on outer-top
-            """ + CommandLine.optionsHelp(ENGRAVABLE_PANELS);
+    // generate SVG, engraving the text (if any) on the outer top and inner bottom panels
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String engraving) 
+    {
+        return generateBoxSVG(width, height, depth, toothWidth, EngravingPlan.fromText(engraving, OUTER_TOP, INNER_BOTTOM));
+    }
 
-    public static void main(String[] args) {
-        System.setProperty("java.awt.headless", "true"); // fonts/images only; never open a window
-        if (args.length > 0) {
-            runFromArguments(args);
-            return;
-        }
+    // generate SVG, engraving whatever the plan puts on each panel
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, EngravingPlan engravings) 
+    {
+        if (engravings == null) engravings = EngravingPlan.none();
+        String engraving = null; // the panel methods below take this but do not use it; engravings are drawn by the plan
 
-        Scanner scanner = new Scanner(System.in);
+        double thickness = 3.0;
+        double outerWidth = width;
+        double outerDepth = depth;
+        double outerHeight = height;
+            
+        // Inner box dimensions (auto-calculated)
+        double innerWidth = outerWidth - (2 * thickness);
+        double innerDepth = outerDepth - thickness;
+        double innerHeight = outerHeight - thickness;
         
-        System.out.println("=== Sliding Box Generator ===");
-        System.out.println("Tip: run with --help to do all of this on one line.\n");
-        
-        System.out.print("Outer box width (mm): ");
-        double width = scanner.nextDouble();
-        
-        System.out.print("Outer box height (mm): ");
-        double height = scanner.nextDouble();
-        
-        System.out.print("Outer box depth (mm): ");
-        double depth = scanner.nextDouble();
-        
-        System.out.print("Tooth width (mm): ");
-        double toothWidth = scanner.nextDouble();
-        
-		// MUST clear the leftover newline from nextDouble()
-		scanner.nextLine();
-		
-        if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) {
+        if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) 
+        {
             System.out.println("Error: All values must be positive!");
-            return;
+            return "";
         }
-        
-        // Engravings (text, logos, pictures) on any panel
-        EngravingPlan engravings = EngravingMenu.ask(new Prompter(scanner), ENGRAVABLE_PANELS);
-        scanner.close();
-        
-        save(width, height, depth, toothWidth, engravings, true);
-    }
 
-    private static void runFromArguments(String[] args) {
-        try {
-            CommandLine line = CommandLine.parse(args, ENGRAVABLE_PANELS);
-            if (line.help()) {
-                System.out.println(USAGE);
-                return;
-            }
-            double[] n = line.positiveNumbers("width", "height", "depth", "tooth width");
-            save(n[0], n[1], n[2], n[3], line.plan(), line.preview());
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage() + "\n");
-            System.out.println(USAGE);
-            System.exit(1);
-        }
-    }
-
-    private static void save(double width, double height, double depth, double toothWidth,
-                             EngravingPlan engravings, boolean preview) {
-        SlidingBox box = new SlidingBox(width, depth, height, toothWidth, engravings);
-        String filename = String.format("SlidingBox_%.0fx%.0fx%.0f.svg", width, depth, height);
-        
-        try {
-            box.saveToFile(filename);
-        } catch (IOException e) {
-            System.out.println("Error saving file: " + e.getMessage());
-            return;
-        }
-        System.out.println("\nSVG file saved as: " + filename);
-        System.out.printf("Outer Box: %.0f × %.0f × %.0f mm\n", width, depth, height);
-        System.out.printf("Inner Box: %.0f × %.0f × %.0f mm\n", 
-                         box.innerWidth, box.innerDepth, box.innerHeight);
-        for (String line : engravings.summary()) {
-            System.out.println("Engraving on " + line);
-        }
-        if (preview) {
-            SvgAsciiPreview.print(box.generateSVG());
-        }
-    }
-	
-    // ========== GENERATE COMPLETE SVG ==========
-    public String generateSVG() {
         double padding = 50;
         double spacing = 50;
         
@@ -1015,35 +948,35 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
                                 padding, padding - 30));
         
         // Outer Front Panel
-        String outerFrontPath = makeOuterFrontPanelPath(outerFrontX, outerFrontY);
+        String outerFrontPath = makeOuterFrontPanelPath(outerFrontX, outerFrontY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(outerFrontPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Panel (Outer)</text>\n",
                                 outerFrontX + outerWidth/2, outerFrontY - 10));
         svg.append(engravings.render(OUTER_FRONT, new Bounds(outerFrontX, outerFrontY, outerWidth, outerHeight)));
         
         // Outer Side Panel
-        String outerSidePath = makeOuterSidePanelPath(outerSideX, outerSideY);
+        String outerSidePath = makeOuterSidePanelPath(outerSideX, outerSideY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(outerSidePath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel (Outer Left)</text>\n",
                                 outerSideX + outerDepth/2, outerSideY - 10));
         svg.append(engravings.render(OUTER_SIDE, new Bounds(outerSideX, outerSideY, outerDepth, outerHeight)));
         
         // Outer Back Panel
-        String outerBackPath = makeOuterBackPanelPath(outerBackX, outerBackY);
+        String outerBackPath = makeOuterBackPanelPath(outerBackX, outerBackY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(outerBackPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel (Outer)</text>\n",
                                 outerBackX + outerWidth/2, outerBackY - 10));
         svg.append(engravings.render(OUTER_BACK, new Bounds(outerBackX, outerBackY, outerWidth, outerHeight)));
         
         // Outer Top Panel
-        String outerTopPath = makeOuterTopPanelPath(outerTopX, outerTopY);
+        String outerTopPath = makeOuterTopPanelPath(outerTopX, outerTopY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(outerTopPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top Panel (Outer)</text>\n",
                                 outerTopX + outerWidth/2, outerTopY - 10));
-        
         svg.append(engravings.render(OUTER_TOP, new Bounds(outerTopX, outerTopY, outerWidth, outerDepth)));
+        
         // Outer Bottom Panel
-        String outerBottomPath = makeOuterBottomPanelPath(outerBottomX, outerBottomY);
+        String outerBottomPath = makeOuterBottomPanelPath(outerBottomX, outerBottomY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(outerBottomPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel (Outer)</text>\n",
                                 outerBottomX + outerWidth/2, outerBottomY - 10));
@@ -1054,53 +987,50 @@ for (int i = 0; i < totalSegmentsHorizontal; i++) {
                                 padding, innerStartY - 30));
         
         // Inner Front Panel
-        String innerFrontPath = makeInnerFrontPanelPath(innerFrontX, innerFrontY);
+        String innerFrontPath = makeInnerFrontPanelPath(innerFrontX, innerFrontY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(innerFrontPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front Panel (Inner)</text>\n",
                                 innerFrontX + innerWidth/2, innerFrontY - 10));
         svg.append(engravings.render(INNER_FRONT, new Bounds(innerFrontX, innerFrontY, innerWidth, innerHeight)));
         
         // Inner Left Side Panel
-        String innerLeftPath = makeInnerLeftSidePanelPath(innerLeftX, innerLeftY);
+        String innerLeftPath = makeInnerLeftSidePanelPath(innerLeftX, innerLeftY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(innerLeftPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel (Inner Left)</text>\n",
                                 innerLeftX + innerDepth/2, innerLeftY - 10));
         svg.append(engravings.render(INNER_LEFT, new Bounds(innerLeftX, innerLeftY, innerDepth, innerHeight)));
         
         // Inner Back Panel
-        String innerBackPath = makeInnerBackPanelPath(innerBackX, innerBackY);
+        String innerBackPath = makeInnerBackPanelPath(innerBackX, innerBackY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(innerBackPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel (Inner)</text>\n",
                                 innerBackX + innerWidth/2, innerBackY - 10));
         svg.append(engravings.render(INNER_BACK, new Bounds(innerBackX, innerBackY, innerWidth, innerHeight)));
         
         // Inner Right Side Panel (with handle)
-        String innerRightPath = makeInnerRightSidePanelPath(innerRightX, innerRightY);
+        String innerRightPath = makeInnerRightSidePanelPath(innerRightX, innerRightY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(innerRightPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel (Inner Right) - WITH HANDLE</text>\n",
                                 innerRightX + innerDepth/2, innerRightY - 10));
         
         // Inner Bottom Panel
-        String innerBottomPath = makeInnerBottomPanelPath(innerBottomX, innerBottomY);
+        String innerBottomPath = makeInnerBottomPanelPath(innerBottomX, innerBottomY, width, height, depth, toothWidth, engraving, innerWidth, outerWidth, innerDepth, outerDepth, innerHeight, outerHeight, thickness);
         svg.append("<path d='").append(innerBottomPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel (Inner)</text>\n",
                                 innerBottomX + innerWidth/2, innerBottomY - 10));
-        
         svg.append(engravings.render(INNER_BOTTOM, new Bounds(innerBottomX, innerBottomY, innerWidth, innerDepth)));
+        
         // Add dimension info
-        svg.append(String.format("<text x='%.1f' y='%.1f' class='label'>Outer: %.0f × %.0f × %.0f mm</text>\n",
-                                padding, totalHeight - 30, outerWidth, outerDepth, outerHeight));
-        svg.append(String.format("<text x='%.1f' y='%.1f' class='label'>Inner: %.0f × %.0f × %.0f mm</text>\n",
-                                padding, totalHeight - 15, innerWidth, innerDepth, innerHeight));
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label'>Outer: %.0f × %.0f × %.0f mm</text>\n", padding, totalHeight - 30, outerWidth, outerDepth, outerHeight));
+        svg.append(String.format("<text x='%.1f' y='%.1f' class='label'>Inner: %.0f × %.0f × %.0f mm</text>\n", padding, totalHeight - 15, innerWidth, innerDepth, innerHeight));
         
         svg.append("</svg>");
         return svg.toString();
     }
-    
-    // ========== SAVE TO FILE ==========
-    public void saveToFile(String filename) throws IOException {
-        FileWriter writer = new FileWriter(filename);
-        writer.write(generateSVG());
-        writer.close();
+
+	// ========== MAIN METHOD ==========
+    public static void main(String[] args) 
+    {
+        
     }
 }
