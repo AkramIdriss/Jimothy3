@@ -21,21 +21,38 @@ import java.util.Scanner;
 
 import java.nio.charset.StandardCharsets;
 
+import java.util.List;
+
+import engraving.CommandLine;
+import engraving.EngravingMenu;
+import engraving.EngravingPlan;
+import engraving.Prompter;
+import engraving.SvgAsciiPreview;
+
 
 public class MainApp
 {
     public static void main(String[] args)
     {
+        System.setProperty("java.awt.headless", "true"); // engraving uses fonts/images only; never open a window
+
+        // everything typed on one line, e.g. "simple 100 80 60 5 --text Hello"
+        if(args.length > 0)
+        {
+            runOneLine(args);
+            return;
+        }
+
         // variables for all boxes
         double length; // length of the box in mm
         double width; // width of the box in mm
         double height; // height of the box in mm
         double teeth; // length of the teeth in mm
-        String engraving = ""; // dont forget to trim() later!
-        // there may be an image var here later!
+        EngravingPlan engravings = EngravingPlan.none(); // text, logos and pictures, and which panel each goes on
         
         //scanner - to take
         Scanner scanner = new Scanner(System.in);
+        Prompter prompter = new Prompter(scanner); // asks the engraving questions using the same scanner
         // Scanner scanner = new Scanner(System.in);
 
         System.out.println("Pick a style of box:\r\n" + "[1] based (simple) box\r\n" + "[2] sticky note / notecard box\r\n" + "[3] sliding box\r\n" + "[4] crate\r\n" + "[5] hinge box\r\n" + "[6] flex box\n");
@@ -54,19 +71,18 @@ public class MainApp
             height = scanner.nextDouble();
             teeth = scanner.nextDouble();
 
-            // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
             System.out.println("\n");
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, SimpleBox.ENGRAVABLE_PANELS);
             }
 
 
             // actually make an SVG 
 
-            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engraving);
+            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -77,6 +93,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
 
         // sticky note / notecard box
@@ -88,7 +105,7 @@ public class MainApp
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, NoteHolderBox.ENGRAVABLE_PANELS);
             }
             
             // determine what type of holder it is
@@ -99,9 +116,7 @@ public class MainApp
             System.out.println("\n");
             
             // actually make an SVG
-            generateNoteHolderSVG(style, engraving);
-
-            String svgContent = generateNoteHolderSVG(style, engraving);
+            String svgContent = generateNoteHolderSVG(style, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -112,6 +127,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
 
         // sliding box
@@ -124,19 +140,18 @@ public class MainApp
             height = scanner.nextDouble();
             teeth = scanner.nextDouble();
 
-            // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
             System.out.println("\n");
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, SlidingBox.ENGRAVABLE_PANELS);
             }
             
             
             // actually make an SVG 
 
-            String svgContent = generateSlidingBoxSVG(width, length, height, teeth, engraving);
+            String svgContent = generateSlidingBoxSVG(width, length, height, teeth, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -148,6 +163,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
 
         // crate - does not yet work
@@ -160,19 +176,18 @@ public class MainApp
             height = scanner.nextDouble();
             teeth = scanner.nextDouble();
 
-            // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
             System.out.println("\n");
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, SimpleBox.ENGRAVABLE_PANELS);
             }
             
             
             // actually make an SVG 
 
-            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engraving);
+            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -182,6 +197,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
 
         // hinge box - does not yet work
@@ -194,18 +210,17 @@ public class MainApp
             height = scanner.nextDouble();
             teeth = scanner.nextDouble();
 
-            // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
             System.out.println("\n");
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, SimpleBox.ENGRAVABLE_PANELS);
             }
             
             // actually make an SVG 
 
-            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engraving);
+            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -217,6 +232,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
 
         // flex box - does not yet work
@@ -229,19 +245,18 @@ public class MainApp
             height = scanner.nextDouble();
             teeth = scanner.nextDouble();
 
-            // this currently relates to nothing! fix it later!
             boolean engraveQuestion = ((scanner.nextLine().trim().toLowerCase()).contains("engrav")) ? true : false; // if the user wants engraving, this will be true; else false
             System.out.println("\n");
 
             if(engraveQuestion)
             {
-                System.out.println("What would you like to engrave?");
+                engravings = EngravingMenu.ask(prompter, SimpleBox.ENGRAVABLE_PANELS);
             }
             
             
             // actually make an SVG 
 
-            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engraving);
+            String svgContent = generateSimpleBoxSVG(width, length, height, teeth, engravings);
             
             System.out.println("Enter a file name, or type nothing to automatically generate one:\n");
             String fileName = scanner.nextLine().trim();
@@ -253,6 +268,7 @@ public class MainApp
             }
 
             saveSVG(fileName, svgContent);
+            showResult(svgContent, engravings, true);
         }
         else
         {
@@ -264,15 +280,15 @@ public class MainApp
 
 
 
-    private static String generateNoteHolderSVG(String style, String engraving) 
+    private static String generateNoteHolderSVG(String style, EngravingPlan engravings) 
     {
         if (style.contains("1") || style.contains("sticky") || style.contains("note")) 
         {
-            return NoteHolderBox.generateBoxSVG(1, engraving);
+            return NoteHolderBox.generateBoxSVG(1, engravings);
         }
         else if (style.contains("2") || style.contains("index") || style.contains("card")) 
         {
-            return NoteHolderBox.generateBoxSVG(2, engraving);
+            return NoteHolderBox.generateBoxSVG(2, engravings);
         }
         else
         {
@@ -281,14 +297,117 @@ public class MainApp
         }
     }
 
-    private static String generateSlidingBoxSVG(double width, double depth, double height, double toothWidth, String engraving) 
+    private static String generateSlidingBoxSVG(double width, double depth, double height, double toothWidth, EngravingPlan engravings) 
     {
-        return SlidingBox.generateBoxSVG(width, height, depth, toothWidth, engraving);
+        return SlidingBox.generateBoxSVG(width, height, depth, toothWidth, engravings);
     }
 
-    private static String generateSimpleBoxSVG(double width, double depth, double height, double toothWidth, String engraving) 
+    private static String generateSimpleBoxSVG(double width, double depth, double height, double toothWidth, EngravingPlan engravings) 
     {
-        return SimpleBox.generateBoxSVG(width, height, depth, toothWidth, engraving);
+        return SimpleBox.generateBoxSVG(width, height, depth, toothWidth, engravings);
+    }
+
+    // one-line mode: MainApp BOX numbers... [engraving options]
+    private static final String ONE_LINE_USAGE = """
+            One-line usage:
+              simple  LENGTH WIDTH HEIGHT TOOTH [options]
+              sliding LENGTH WIDTH HEIGHT TOOTH [options]
+              note    STYLE [options]          (STYLE: 1 = sticky note, 2 = index card)
+            Example:
+              simple 100 80 60 5 --text "Sarah's|Recipes" --font serif
+            The file is saved in your Downloads folder.
+            Panels for --on: simple: %s
+                             sliding: %s
+                             note: %s
+            """.formatted(String.join(", ", dashed(SimpleBox.ENGRAVABLE_PANELS)),
+                          String.join(", ", dashed(SlidingBox.ENGRAVABLE_PANELS)),
+                          String.join(", ", dashed(NoteHolderBox.ENGRAVABLE_PANELS)));
+
+    private static List<String> dashed(List<String> panels)
+    {
+        return panels.stream().map(p -> p.replace(' ', '-')).toList();
+    }
+
+    private static void runOneLine(String[] args)
+    {
+        String box = args[0].toLowerCase();
+        String[] rest = java.util.Arrays.copyOfRange(args, 1, args.length);
+
+        try
+        {
+            if(box.equals("--help") || box.equals("-h") || box.equals("help"))
+            {
+                System.out.println(ONE_LINE_USAGE + "\n" + CommandLine.optionsHelp(SimpleBox.ENGRAVABLE_PANELS));
+                return;
+            }
+
+            String svgContent;
+            String fileName;
+            CommandLine line;
+
+            if(box.contains("simple") || box.equals("1"))
+            {
+                line = CommandLine.parse(rest, SimpleBox.ENGRAVABLE_PANELS);
+                if(line.help()) { System.out.println(ONE_LINE_USAGE + "\n" + CommandLine.optionsHelp(SimpleBox.ENGRAVABLE_PANELS)); return; }
+                double[] n = line.positiveNumbers("length", "width", "height", "tooth width");
+                svgContent = generateSimpleBoxSVG(n[1], n[0], n[2], n[3], line.plan());
+                fileName = String.format("simple_box_%.0fx%.0fx%.0f_t%.0f", n[0], n[1], n[2], n[3]);
+            }
+            else if(box.contains("slid") || box.equals("3"))
+            {
+                line = CommandLine.parse(rest, SlidingBox.ENGRAVABLE_PANELS);
+                if(line.help()) { System.out.println(ONE_LINE_USAGE + "\n" + CommandLine.optionsHelp(SlidingBox.ENGRAVABLE_PANELS)); return; }
+                double[] n = line.positiveNumbers("length", "width", "height", "tooth width");
+                svgContent = generateSlidingBoxSVG(n[1], n[0], n[2], n[3], line.plan());
+                fileName = String.format("sliding_box_%.0fx%.0fx%.0f_t%.0f", n[0], n[1], n[2], n[3]);
+            }
+            else if(box.contains("note") || box.contains("sticky") || box.equals("2"))
+            {
+                line = CommandLine.parse(rest, NoteHolderBox.ENGRAVABLE_PANELS);
+                if(line.help()) { System.out.println(ONE_LINE_USAGE + "\n" + CommandLine.optionsHelp(NoteHolderBox.ENGRAVABLE_PANELS)); return; }
+                if(line.positional().size() != 1)
+                {
+                    throw new IllegalArgumentException("note needs one STYLE: 1 (sticky note) or 2 (index card)");
+                }
+                String style = line.positional().get(0).toLowerCase();
+                svgContent = generateNoteHolderSVG(style, line.plan());
+                if(svgContent.isEmpty())
+                {
+                    throw new IllegalArgumentException("unknown note holder style: " + style);
+                }
+                fileName = "note_holder_" + style;
+            }
+            else
+            {
+                throw new IllegalArgumentException("unknown box type: " + args[0] + " (use simple, sliding or note)");
+            }
+
+            saveSVG(fileName, svgContent);
+            showResult(svgContent, line.plan(), line.preview());
+        }
+        catch(Exception e)
+        {
+            System.out.println("Error: " + e.getMessage() + "\n");
+            System.out.println(ONE_LINE_USAGE);
+            System.exit(1);
+        }
+    }
+
+    // lists the engravings and draws the box in the terminal
+    private static void showResult(String svgContent, EngravingPlan engravings, boolean preview)
+    {
+        if(svgContent == null || svgContent.isEmpty()) // nothing was made (bad measurements)
+        {
+            return;
+        }
+        for(String line : engravings.summary())
+        {
+            System.out.println("Engraving on " + line);
+        }
+        if(preview)
+        {
+            SvgAsciiPreview.print(svgContent);
+        }
     }
 
     private static void saveSVG(String filePath, String svgContent) 

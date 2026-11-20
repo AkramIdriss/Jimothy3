@@ -10,9 +10,10 @@ Isaac England - ile22a
 */
 package jimothypackage;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Scanner;
+import java.util.List;
+
+import engraving.Bounds;
+import engraving.EngravingPlan;
 
 /******************************************************************************
 
@@ -21,40 +22,16 @@ import java.util.Scanner;
 
 public class NoteHolderBox 
 {
-    // Helper method to calculate optimal font size for text to fit in panel
-    private static double calculateFontSize(String text, double panelWidth, double panelDepth) 
-    {
-        if (text == null || text.isEmpty()) 
-        {
-            return 0;
-        }
-        
-        // Leave 20% padding on each side (60% usable width)
-        double usableWidth = panelWidth * 0.6;
-        double usableHeight = panelDepth * 0.6;
-        
-        // Rough approximation: each character is about 0.6em wide for bold sans-serif
-        double charWidth = 0.6;
-        int textLength = text.length();
-        
-        // Calculate font size based on width constraint
-        double fontSizeByWidth = usableWidth / (textLength * charWidth);
-        
-        // Calculate font size based on height constraint (text height is roughly 1em)
-        double fontSizeByHeight = usableHeight;
-        
-        // Use the smaller of the two to ensure it fits
-        double fontSize = Math.min(fontSizeByWidth, fontSizeByHeight);
-        
-        // Set reasonable bounds
-        double minFontSize = 8.0;   // Minimum readable size
-        double maxFontSize = 50.0;  // Maximum size
-        
-        fontSize = Math.max(minFontSize, Math.min(maxFontSize, fontSize));
-		
-        return fontSize;
-    }
-    
+    // panels that can be engraved (names used by the engraving menu and --on)
+    public static final String BOTTOM = "bottom";
+    public static final String BACK = "back";
+    public static final String SIDE = "side";
+    public static final String SIDE_2 = "side 2";
+    public static final List<String> ENGRAVABLE_PANELS = List.of(BOTTOM, BACK, SIDE, SIDE_2);
+
+    // the back and side panels have a row of slots this far (mm) up from their bottom edge; engravings stay above it
+    private static final double SLOT_ROW_CLEARANCE = 16.0;
+
     // front panel (left and right)
     public static String makeFrontPanelNHPath(double x, double y, double noteWidth, double noteDepth, double noteHeight, double toothWidth)
     {
@@ -449,9 +426,17 @@ public class NoteHolderBox
         return path.toString();
     }
     
-    // actually generate the svg
-    public static String generateBoxSVG(int noteStyle, String engraving) 
+    // actually generate the svg, engraving the text (if any) on the bottom panel
+    public static String generateBoxSVG(int noteStyle, String engraving)
     {
+        return generateBoxSVG(noteStyle, EngravingPlan.fromText(engraving, BOTTOM));
+    }
+
+    // actually generate the svg, engraving whatever the plan puts on each panel
+    public static String generateBoxSVG(int noteStyle, EngravingPlan engravings)
+    {
+        if (engravings == null) engravings = EngravingPlan.none();
+
         // variables for sizing
         double noteWidth;
         double noteDepth;
@@ -539,42 +524,29 @@ public class NoteHolderBox
         svg.append("<path d='").append(backPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back Panel</text>\n",
                                 backX + noteWidth / 2, backY - 10));
-        
+        svg.append(engravings.render(BACK, new Bounds(backX, backY, noteWidth, noteHeight - SLOT_ROW_CLEARANCE)));
+
         // Side Panel 1
         String sidePath = makeSidePanelNHPath(sideX, sideY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(sidePath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel</text>\n",
                                 sideX + noteDepth / 2, sideY - 10));
-        
+        svg.append(engravings.render(SIDE, new Bounds(sideX, sideY, noteDepth, noteHeight - SLOT_ROW_CLEARANCE)));
+
         // Side Panel 2
         String side2Path = makeSidePanelNHPath(side2X, side2Y, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(side2Path).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side Panel 2</text>\n",
                                 side2X + noteDepth / 2, side2Y - 10));
-        
+        svg.append(engravings.render(SIDE_2, new Bounds(side2X, side2Y, noteDepth, noteHeight - SLOT_ROW_CLEARANCE)));
+
         // Bottom Panel
         String bottomPath = makeBottomPanelNHPath(bottomX, bottomY, noteWidth, noteDepth, noteHeight, toothWidth);
         svg.append("<path d='").append(bottomPath).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom Panel</text>\n",
                                 bottomX + noteWidth / 2, bottomY - 10));
-        
-        // Add engraving to bottom panel if provided
-        if (engraving != null && !engraving.isEmpty()) 
-        {
-            double centerX = bottomX + noteWidth / 2.0;
-            double centerY = bottomY + noteDepth / 2.0;
-            double fontSize = calculateFontSize(engraving, noteWidth, noteDepth);
+        svg.append(engravings.render(BOTTOM, new Bounds(bottomX, bottomY, noteWidth, noteDepth)));
 
-            svg.append
-            (
-                "<text dominant-baseline=\"middle\" font-size=\"" + String.format("%.1fpx", fontSize) +
-                "\" style=\"font-family: sans-serif; font-weight: bold; fill: rgb(255,0,0)\" " +
-                "text-anchor=\"middle\" transform=\"matrix(1 0 0 1 " +
-                String.format("%.3f %.3f", centerX, centerY) + ")\">" +
-                engraving.toUpperCase() + "</text>\n"
-            );
-        }
-        
         svg.append("</svg>");
         return svg.toString();
     }

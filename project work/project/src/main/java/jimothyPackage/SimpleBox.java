@@ -10,10 +10,21 @@ Isaac England - ile22a
 */
 package jimothypackage;
 
-import java.util.Scanner;
+import java.util.List;
 
-public class SimpleBox 
+import engraving.Bounds;
+import engraving.EngravingPlan;
+
+public class SimpleBox
 {
+    // panels that can be engraved (names used by the engraving menu and --on)
+    public static final String TOP = "top";
+    public static final String FRONT = "front";
+    public static final String BACK = "back";
+    public static final String RIGHT_SIDE = "right side";
+    public static final String LEFT_SIDE = "left side";
+    public static final List<String> ENGRAVABLE_PANELS = List.of(TOP, FRONT, BACK, RIGHT_SIDE, LEFT_SIDE);
+
     //front panel
     public static String makeFrontPanelPath(double x, double y, double width, double height, double toothWidth) 
     {
@@ -533,9 +544,17 @@ public class SimpleBox
     }
 
 
-    // generates the SVG of the box
-    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String engraving) 
+    // generates the SVG of the box, engraving the text (if any) on the top and back panels
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, String engraving)
     {
+        return generateBoxSVG(width, height, depth, toothWidth, EngravingPlan.fromText(engraving, TOP, BACK));
+    }
+
+    // generates the SVG of the box, engraving whatever the plan puts on each panel
+    public static String generateBoxSVG(double width, double height, double depth, double toothWidth, EngravingPlan engravings)
+    {
+        if (engravings == null) engravings = EngravingPlan.none();
+
         // Validate inputs
         if (width <= 0 || height <= 0 || depth <= 0 || toothWidth <= 0) 
         {
@@ -578,11 +597,10 @@ public class SimpleBox
         svg.append("preserveAspectRatio='xMidYMid meet' ");
         svg.append("xmlns='http://www.w3.org/2000/svg'>\n");
         
-        // Style - updated with engraving class
+        // Style
         svg.append("<style>\n");
         svg.append("  .cut { fill: none; stroke: black; stroke-width: 0.2; }\n");
         svg.append("  .label { font-size: 12px; font-family: Arial, sans-serif; fill: #333; }\n");
-        svg.append("  .engraving { fill: #666; font-weight: bold; font-family: 'Times New Roman', serif; }\n");
         svg.append("</style>\n");
         
 
@@ -593,17 +611,20 @@ public class SimpleBox
         svg.append("<path d='").append(makeFrontPanelPath(frontX, frontY, width, height, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Front</text>\n",
                                 frontX + width/2, frontY - 10));
-        
+        svg.append(engravings.render(FRONT, new Bounds(frontX, frontY, width, height)));
+
         // Side (right)
         svg.append("<path d='").append(makeSidePanelPath(sideX, sideY, depth, height, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Right)</text>\n",
                                 sideX + depth/2, sideY - 10));
-        
+        svg.append(engravings.render(RIGHT_SIDE, new Bounds(sideX, sideY, depth, height)));
+
         // Side (left)
         svg.append("<path d='").append(makeSidePanelPath(side2X, side2Y, depth, height, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Side (Left)</text>\n",
                                 side2X + depth/2, side2Y - 10));
-        
+        svg.append(engravings.render(LEFT_SIDE, new Bounds(side2X, side2Y, depth, height)));
+
         // Bottom
         svg.append("<path d='").append(makeBottomPanelPath(bottomX, bottomY, width, depth, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Bottom</text>\n",
@@ -613,57 +634,14 @@ public class SimpleBox
         svg.append("<path d='").append(makeTopPanelPath(topX, topY, width, depth, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Top</text>\n",
                                 topX + width/2, topY - 10));
-        
+        svg.append(engravings.render(TOP, new Bounds(topX, topY, width, depth)));
 
-        // Add engraving to top panel if provided
-        if (engraving != null && !engraving.trim().isEmpty()) {
-            String name = engraving.trim();
-            double panelX = topX;
-            double panelY = topY;
-            double panelWidth = width;
-            double panelHeight = depth;
-            
-            // Auto-scaling font size
-            double maxFont = panelHeight * 0.6;
-            double minFont = 8.0;
-            double scaledFont = Math.min(maxFont, (panelWidth / (name.length() * 0.6)));
-            scaledFont = Math.max(minFont, scaledFont);
-            
-            svg.append(String.format(
-                "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-                "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-                "class=\"engraving\">%s</text>\n",
-                panelX + panelWidth / 2.0,
-                panelY + panelHeight / 2.0,
-                scaledFont,
-                name
-            ));
-            
-            // Optional: Add engraving to back panel as well (smaller)
-            double backPanelX = backX;
-            double backPanelY = backY;
-            double backPanelWidth = width;
-            double backPanelHeight = height;
-            
-            double backFont = Math.min(backPanelHeight * 0.3, scaledFont * 0.7);
-            backFont = Math.max(5.0, backFont);
-            
-            svg.append(String.format(
-                "<text x=\"%.3f\" y=\"%.3f\" font-size=\"%.3f\" " +
-                "text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-                "class=\"engraving\" opacity=\"0.7\">%s</text>\n",
-                backPanelX + backPanelWidth / 2.0,
-                backPanelY + backPanelHeight / 2.0,
-                backFont,
-                name
-            ));
-        }
-        
         // Back
         svg.append("<path d='").append(makeFrontPanelPath(backX, backY, width, height, toothWidth)).append("' class='cut' />\n");
         svg.append(String.format("<text x='%.1f' y='%.1f' class='label' text-anchor='middle'>Back</text>\n",
                                 backX + width/2, backY - 10));
-        
+        svg.append(engravings.render(BACK, new Bounds(backX, backY, width, height)));
+
         svg.append("</svg>");
         return svg.toString();
     }

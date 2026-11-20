@@ -8,8 +8,15 @@ Akram Idriss - ami22a
 Isaac England - ile22a
 
 */
+package jimothypackage;
+
 import static org.junit.Assert.*;
 
+import java.awt.geom.Rectangle2D;
+
+import engraving.Bounds;
+import engraving.EngravingPlan;
+import engraving.SvgAssert;
 import org.junit.Test;
 
 public class SimpleBoxTest {
@@ -34,8 +41,9 @@ public class SimpleBoxTest {
     }
 
     /**
-     * A monogram should be drawn twice (top panel + faded copy on the back),
-     * trimmed of surrounding whitespace. A blank monogram should add nothing.
+     * A monogram should be engraved twice (top panel + back panel), trimmed of
+     * surrounding whitespace. A blank monogram should add nothing.
+     * The letters are cut as outlines; data-text keeps the words for the preview.
      */
     @Test
     public void generateBoxSvgHandlesMonogram() {
@@ -45,11 +53,11 @@ public class SimpleBoxTest {
         assertTrue(withName.startsWith("<?xml"));
         assertTrue(withName.endsWith("</svg>"));
 
-        int count = withName.split(">JDE</text>", -1).length - 1;
+        int count = withName.split("data-text='JDE'", -1).length - 1;
         assertEquals("Monogram should appear on top and back panels", 2, count);
-        assertFalse(withName.contains(">  JDE  </text>"));
+        assertFalse(withName.contains("data-text='  JDE  '"));
 
-        assertFalse(blank.contains("class=\"monogram\""));
+        assertEquals(0, SvgAssert.countEngravings(blank));
     }
 
         /**
@@ -107,5 +115,75 @@ public class SimpleBoxTest {
         assertEquals(6, top.split("H 103\\.000 ", -1).length - 1);
         assertEquals(6, top.split("H -3\\.000 ", -1).length - 1);
         assertTrue(top.endsWith("Z"));
+    }
+
+    /**
+     * Tooth count follows toothWidth: each edge keeps a 2 * toothWidth corner
+     * at both ends and fits round(remaining / (2 * toothWidth)) teeth in
+     * between. For 100 x 80 with 10 mm teeth that is (100 - 40) / 20 = 3
+     * teeth on the width edges and (80 - 40) / 20 = 2 on the depth edges.
+     */
+    @Test
+    public void toothCountFollowsToothWidth() {
+        String top = SimpleBox.makeTopPanelPath(0, 0, 100, 80, 10);
+
+        assertEquals(3, top.split("V -3\\.000 ", -1).length - 1);
+        assertEquals(3, top.split("V 83\\.000 ", -1).length - 1);
+        assertEquals(2, top.split("H 103\\.000 ", -1).length - 1);
+        assertEquals(2, top.split("H -3\\.000 ", -1).length - 1);
+    }
+
+    /**
+     * generateBoxSVG refuses any non-positive dimension or tooth width
+     * and returns an empty string instead of a broken file.
+     */
+    @Test
+    public void generateBoxSvgRejectsNonPositiveInputs() {
+        assertEquals("", SimpleBox.generateBoxSVG(0, 60, 80, 5, ""));
+        assertEquals("", SimpleBox.generateBoxSVG(100, -1, 80, 5, ""));
+        assertEquals("", SimpleBox.generateBoxSVG(100, 60, 0, 5, ""));
+        assertEquals("", SimpleBox.generateBoxSVG(100, 60, 80, 0, ""));
+    }
+
+    /**
+     * A simple box is six panels: front, back, two sides, top and bottom.
+     * Each one is a cut path with its own label.
+     */
+    @Test
+    public void generateBoxSvgHasSixLabelledPanels() {
+        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, "");
+
+        assertEquals(6, svg.split("class='cut'", -1).length - 1);
+        for (String label : new String[] {
+                ">Front<", ">Back<", ">Side (Right)<", ">Side (Left)<", ">Top<", ">Bottom<" }) {
+            assertTrue("Missing label " + label, svg.contains(label));
+        }
+    }
+
+    /**
+     * The monogram is centred on the top panel. For 100 x 60 x 80 the top
+     * panel sits at (200, 160) and is 100 x 80, so its centre is (250, 200).
+     */
+    @Test
+    public void monogramCentredOnTopPanel() {
+        String svg = SimpleBox.generateBoxSVG(100, 60, 80, 5, EngravingPlan.fromText("JDE", SimpleBox.TOP));
+
+        Rectangle2D box = SvgAssert.engravePathBounds(svg);
+        assertEquals(250.0, box.getCenterX(), 0.5);
+        assertEquals(200.0, box.getCenterY(), 0.5);
+    }
+
+    /**
+     * A 30-letter monogram is shrunk until it fits, so it never runs off
+     * the top panel (200, 160, 100 x 80) or the back panel (50, 302, 100 x 60).
+     */
+    @Test
+    public void longMonogramStaysInsideTopAndBackPanels() {
+        String name = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD";
+
+        SvgAssert.assertPathsInside(SimpleBox.generateBoxSVG(100, 60, 80, 5,
+                EngravingPlan.fromText(name, SimpleBox.TOP)), new Bounds(200, 160, 100, 80));
+        SvgAssert.assertPathsInside(SimpleBox.generateBoxSVG(100, 60, 80, 5,
+                EngravingPlan.fromText(name, SimpleBox.BACK)), new Bounds(50, 302, 100, 60));
     }
 }
